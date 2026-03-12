@@ -28,6 +28,10 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [search, statusFilter, activeLocation]);
 
+  if (mode === "create") {
+    return <CreateOrderView onBack={() => setMode("list")} />;
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
       {/* Top bar with order type selector */}
@@ -47,6 +51,10 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             <span className="text-xs text-muted-foreground">Real-time</span>
           </div>
         </div>
+        <Button size="sm" onClick={() => setMode("create")} className="gap-1.5">
+          <Plus size={14} />
+          New Order
+        </Button>
       </div>
 
       {orderType === "sales" && (
