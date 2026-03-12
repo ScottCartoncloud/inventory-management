@@ -43,11 +43,14 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             <span className="w-2 h-2 rounded-full bg-[hsl(142,76%,36%)] animate-pulse" />
             <span className="text-xs text-muted-foreground">Real-time</span>
           </div>
-          {orderType === "sales" && (
-            <LocationPills activeLocation={activeLocation} onLocationChange={onLocationChange} />
-          )}
         </div>
-        {orderType === "sales" && (
+      </div>
+
+      {orderType === "sales" && (
+        <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-1 flex-wrap">
+            <LocationPills activeLocation={activeLocation} onLocationChange={onLocationChange} />
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -61,7 +64,8 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
               <option value="on_hold">On Hold</option>
             </select>
           </div>
-        )}
+        </div>
+      )}
       </div>
 
       {orderType === "purchase" ? (
