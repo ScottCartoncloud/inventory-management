@@ -1,12 +1,30 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { AppHeader } from "@/components/AppHeader";
+import { DashboardView } from "@/components/views/DashboardView";
+import { InventoryView } from "@/components/views/InventoryView";
+import { OrdersView } from "@/components/views/OrdersView";
+import { ProductsView } from "@/components/views/ProductsView";
+import { SettingsView } from "@/components/views/SettingsView";
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeLocation, setActiveLocation] = useState("all");
+
+  function handleNavigate(tab: string, location?: string) {
+    setActiveTab(tab);
+    if (location) setActiveLocation(location);
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {activeTab === "dashboard" && <DashboardView onNavigate={handleNavigate} />}
+        {activeTab === "inventory" && <InventoryView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
+        {activeTab === "orders" && <OrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
+        {activeTab === "products" && <ProductsView />}
+        {activeTab === "settings" && <SettingsView />}
+      </main>
     </div>
   );
 };
