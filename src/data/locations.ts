@@ -3,11 +3,13 @@ export interface Location {
   name: string;
   code: string;
   color: string;
+  endpoint: string;
+  isConnected: boolean;
 }
 
 export const LOCATIONS: Location[] = [
-  { id: "syd", name: "Sydney — Rosehill", code: "SYD", color: "hsl(206, 100%, 40%)" },
-  { id: "mel", name: "Melbourne — Laverton", code: "MEL", color: "hsl(160, 84%, 39%)" },
-  { id: "bne", name: "Brisbane — Yatala", code: "BNE", color: "hsl(38, 92%, 50%)" },
-  { id: "per", name: "Perth — Welshpool", code: "PER", color: "hsl(258, 90%, 66%)" },
+  { id: "syd", name: "Sydney — Rosehill", code: "SYD", color: "hsl(206, 100%, 40%)", endpoint: "api.cartoncloud.com", isConnected: true },
+  { id: "mel", name: "Melbourne — Laverton", code: "MEL", color: "hsl(160, 84%, 39%)", endpoint: "api.cartoncloud.com", isConnected: true },
+  { id: "bne", name: "Brisbane — Yatala", code: "BNE", color: "hsl(38, 92%, 50%)", endpoint: "api.cartoncloud.com", isConnected: true },
+  { id: "per", name: "Perth — Welshpool", code: "PER", color: "hsl(258, 90%, 66%)", endpoint: "api.cartoncloud.com", isConnected: true },
 ];

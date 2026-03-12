@@ -1,11 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LOCATIONS } from "@/data/locations";
 import { PRODUCTS } from "@/data/products";
 import { StatusBadge } from "@/components/StatusBadge";
-import { CartonCloudIntegration } from "@/components/settings/CartonCloudIntegration";
-import { Filter, Settings, Plus } from "lucide-react";
+import { LocationConnectionCard } from "@/components/settings/LocationConnectionCard";
+import { Settings, Plus, Cloud } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export function SettingsView() {
   return (
@@ -14,8 +16,7 @@ export function SettingsView() {
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="mb-6 w-full justify-start">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-            <TabsTrigger value="integration">CartonCloud Integration</TabsTrigger>
+            <TabsTrigger value="connections">Connections</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -41,36 +42,55 @@ export function SettingsView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="locations">
+          <TabsContent value="connections">
             <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter size={16} className="text-primary" />
-                <span className="font-semibold text-base">CartonCloud Locations</span>
+              <div className="flex items-center gap-2 mb-2">
+                <Cloud size={16} className="text-primary" />
+                <span className="font-semibold text-base">CartonCloud Connections</span>
               </div>
-              <p className="text-sm text-muted-foreground mb-5">Manage which CartonCloud warehouses are linked to this portal.</p>
-              {LOCATIONS.map(loc => (
-                <div key={loc.id} className="flex items-center justify-between py-3 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-xs" style={{ background: loc.color }}>{loc.code}</div>
-                    <div>
-                      <div className="font-medium">{loc.name}</div>
-                      <div className="text-xs text-muted-foreground">Connected · {PRODUCTS.filter(p => (p as any)[loc.id] > 0).length} active SKUs</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <StatusBadge status="ok" />
-                    <Button variant="outline" size="sm">Configure</Button>
-                  </div>
-                </div>
-              ))}
+              <p className="text-sm text-muted-foreground mb-5">
+                Each location connects to an independent CartonCloud tenant with its own API credentials.
+              </p>
+
+              <Accordion type="single" collapsible className="w-full">
+                {LOCATIONS.map(loc => (
+                  <AccordionItem key={loc.id} value={loc.id}>
+                    <AccordionTrigger className="hover:no-underline py-4">
+                      <div className="flex items-center gap-3 flex-1 mr-4">
+                        <div
+                          className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0"
+                          style={{ background: loc.color }}
+                        >
+                          {loc.code}
+                        </div>
+                        <div className="text-left flex-1">
+                          <div className="font-medium">{loc.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {loc.endpoint} · {PRODUCTS.filter(p => (p as any)[loc.id] > 0).length} active SKUs
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={loc.isConnected
+                            ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent"
+                            : "bg-muted text-muted-foreground border-transparent"
+                          }
+                        >
+                          {loc.isConnected ? "Connected" : "Disconnected"}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-2 pb-4">
+                      <LocationConnectionCard location={loc} />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+
               <div className="mt-5">
-                <Button><Plus size={14} />Add Location</Button>
+                <Button><Plus size={14} /> Add Connection</Button>
               </div>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="integration">
-            <CartonCloudIntegration />
           </TabsContent>
         </Tabs>
       </div>
