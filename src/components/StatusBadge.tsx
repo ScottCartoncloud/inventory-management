@@ -9,6 +9,10 @@ const statusMap: Record<string, { label: string; className: string }> = {
   ok:          { label: "In Stock",     className: "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent" },
   low:         { label: "Low Stock",    className: "bg-[hsl(38,92%,50%)]/12 text-[hsl(38,92%,50%)] border-transparent" },
   out:         { label: "Out of Stock", className: "bg-destructive/10 text-destructive border-transparent" },
+  ordered:     { label: "Ordered",      className: "bg-[hsl(210,100%,40%)]/10 text-[hsl(210,100%,40%)] border-transparent" },
+  in_transit:  { label: "In Transit",   className: "bg-[hsl(258,90%,66%)]/10 text-[hsl(258,90%,66%)] border-transparent" },
+  received:    { label: "Received",     className: "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent" },
+  partial:     { label: "Partial",      className: "bg-[hsl(38,92%,50%)]/12 text-[hsl(38,92%,50%)] border-transparent" },
 };
 
 export function StatusBadge({ status }: { status: string }) {
