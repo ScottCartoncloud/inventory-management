@@ -157,148 +157,152 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto p-5 space-y-5">
+        <div className="max-w-[1600px] mx-auto p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-start">
 
-          {/* Order Details */}
-          <Card className="p-5 space-y-4">
-            <h2 className="font-semibold text-base">Order Details</h2>
+            {/* Column 1: Order Details + Custom Fields */}
+            <div className="space-y-5">
+              {/* Order Details */}
+              <Card className="p-5 space-y-4">
+                <h2 className="font-semibold text-base">Order Details</h2>
 
-            {/* Location selector */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Location <span className="text-destructive">*</span></label>
-              <Select value={selectedLocation} onValueChange={handleLocationChange}>
-                <SelectTrigger className="w-72">
-                  <SelectValue placeholder="Select a location…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOCATIONS.map(loc => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      <span className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: loc.color }} />
-                        {loc.name} ({loc.code})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Order will be placed against this CartonCloud entity</p>
-            </div>
-
-            {/* Reference fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Customer Reference / PO Number</label>
-                <Input value={customerRef} onChange={e => setCustomerRef(e.target.value)} placeholder="e.g. PO-2024-001" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Requested Delivery Date</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
-                      {deliveryDate ? format(deliveryDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Notes & Instructions</label>
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Delivery instructions, special handling notes…" rows={3} />
-            </div>
-
-            {/* Attachments */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Attachments</label>
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors w-full justify-center"
-              >
-                <Upload size={16} />
-                Attach Documents
-              </button>
-              {attachments.length > 0 && (
-                <div className="space-y-1">
-                  {attachments.map((name, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded">
-                      <FileUp size={14} className="text-muted-foreground" />
-                      <span className="flex-1 truncate">{name}</span>
-                      <button onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
+                {/* Location selector */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Location <span className="text-destructive">*</span></label>
+                  <Select value={selectedLocation} onValueChange={handleLocationChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a location…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATIONS.map(loc => (
+                        <SelectItem key={loc.id} value={loc.id}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: loc.color }} />
+                            {loc.name} ({loc.code})
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Order will be placed against this CartonCloud entity</p>
                 </div>
-              )}
-            </div>
-          </Card>
 
-          {/* Custom Fields */}
-          <Collapsible open={customFieldsOpen} onOpenChange={setCustomFieldsOpen}>
-            <Card className="p-5">
-              <CollapsibleTrigger className="flex items-center justify-between w-full">
-                <div>
-                  <h2 className="font-semibold text-base text-left">Custom Fields</h2>
-                  <p className="text-xs text-muted-foreground text-left">Additional fields configured by your 3PL provider</p>
-                </div>
-                <ChevronDown size={16} className={`text-muted-foreground transition-transform ${customFieldsOpen ? "rotate-180" : ""}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-4 space-y-4">
-                <p className="text-xs text-muted-foreground italic">These fields are defined by your warehouse provider and may vary per location.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Reference fields */}
+                <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Batch Number</label>
-                    <Input value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="e.g. BATCH-2024-A1" />
+                    <label className="text-sm font-medium">Customer Reference / PO Number</label>
+                    <Input value={customerRef} onChange={e => setCustomerRef(e.target.value)} placeholder="e.g. PO-2024-001" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Expiry Date</label>
+                    <label className="text-sm font-medium">Requested Delivery Date</label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal">
                           <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
-                          {expiryDate ? format(expiryDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                          {deliveryDate ? format(deliveryDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={expiryDate} onSelect={setExpiryDate} initialFocus />
+                        <Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} initialFocus />
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Temperature Zone</label>
-                    <Select value={tempZone} onValueChange={setTempZone}>
-                      <SelectTrigger><SelectValue placeholder="Select zone…" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ambient">Ambient</SelectItem>
-                        <SelectItem value="chilled">Chilled</SelectItem>
-                        <SelectItem value="frozen">Frozen</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Priority</label>
-                    <Select value={priority} onValueChange={setPriority}>
-                      <SelectTrigger><SelectValue placeholder="Select priority…" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard</SelectItem>
-                        <SelectItem value="express">Express</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
 
-          {/* Line Items */}
-          <Card className="p-5 space-y-4">
+                {/* Notes */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Notes & Instructions</label>
+                  <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Delivery instructions, special handling notes…" rows={3} />
+                </div>
+
+                {/* Attachments */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Attachments</label>
+                  <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors w-full justify-center"
+                  >
+                    <Upload size={16} />
+                    Attach Documents
+                  </button>
+                  {attachments.length > 0 && (
+                    <div className="space-y-1">
+                      {attachments.map((name, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded">
+                          <FileUp size={14} className="text-muted-foreground" />
+                          <span className="flex-1 truncate">{name}</span>
+                          <button onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Custom Fields */}
+              <Collapsible open={customFieldsOpen} onOpenChange={setCustomFieldsOpen}>
+                <Card className="p-5">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div>
+                      <h2 className="font-semibold text-base text-left">Custom Fields</h2>
+                      <p className="text-xs text-muted-foreground text-left">Additional fields configured by your 3PL provider</p>
+                    </div>
+                    <ChevronDown size={16} className={`text-muted-foreground transition-transform ${customFieldsOpen ? "rotate-180" : ""}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-4 space-y-4">
+                    <p className="text-xs text-muted-foreground italic">These fields are defined by your warehouse provider and may vary per location.</p>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium">Batch Number</label>
+                        <Input value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="e.g. BATCH-2024-A1" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium">Expiry Date</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
+                              {expiryDate ? format(expiryDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={expiryDate} onSelect={setExpiryDate} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium">Temperature Zone</label>
+                        <Select value={tempZone} onValueChange={setTempZone}>
+                          <SelectTrigger><SelectValue placeholder="Select zone…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ambient">Ambient</SelectItem>
+                            <SelectItem value="chilled">Chilled</SelectItem>
+                            <SelectItem value="frozen">Frozen</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium">Priority</label>
+                        <Select value={priority} onValueChange={setPriority}>
+                          <SelectTrigger><SelectValue placeholder="Select priority…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="standard">Standard</SelectItem>
+                            <SelectItem value="express">Express</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+
+            {/* Column 2: Line Items */}
+            <Card className="p-5 space-y-4">
             <h2 className="font-semibold text-base">Line Items</h2>
 
             {!selectedLocation ? (
@@ -418,6 +422,8 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
               </>
             )}
           </Card>
+
+          </div>{/* end grid */}
         </div>
       </div>
 
