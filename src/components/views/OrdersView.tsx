@@ -7,7 +7,9 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { PurchaseOrdersView } from "@/components/views/PurchaseOrdersView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { CreateOrderView } from "@/components/views/CreateOrderView";
+import { Button } from "@/components/ui/button";
 
 interface OrdersViewProps {
   activeLocation: string;
@@ -18,12 +20,17 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
   const [orderType, setOrderType] = useState<"sales" | "purchase">("sales");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [mode, setMode] = useState<"list" | "create">("list");
 
   const filtered = useMemo(() => ORDERS.filter(o => {
     const matchLoc = activeLocation === "all" || o.location === activeLocation;
     const matchSearch = !search || [o.id, o.customer, o.ref, o.consignment].some(v => v.toLowerCase().includes(search.toLowerCase()));
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [search, statusFilter, activeLocation]);
+
+  if (mode === "create") {
+    return <CreateOrderView onBack={() => setMode("list")} />;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -44,6 +51,10 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             <span className="text-xs text-muted-foreground">Real-time</span>
           </div>
         </div>
+        <Button size="sm" onClick={() => setMode("create")} className="gap-1.5">
+          <Plus size={14} />
+          New Order
+        </Button>
       </div>
 
       {orderType === "sales" && (
