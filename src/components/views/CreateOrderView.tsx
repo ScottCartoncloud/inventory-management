@@ -422,6 +422,8 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
               </>
             )}
           </Card>
+
+          </div>{/* end grid */}
         </div>
       </div>
 
