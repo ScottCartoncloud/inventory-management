@@ -66,7 +66,6 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
           </div>
         </div>
       )}
-      </div>
 
       {orderType === "purchase" ? (
         <PurchaseOrdersView activeLocation={activeLocation} onLocationChange={onLocationChange} />
