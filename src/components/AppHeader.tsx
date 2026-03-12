@@ -30,7 +30,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
           <ChevronDown size={14} className="opacity-60" />
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm">sarah.jones@acmefoods.com.au</span>
+          <span className="text-sm">sarah.jones@bibendum.com.au</span>
           <span className="text-xs px-2 py-0.5 bg-white/10 rounded">Customer Admin</span>
           <button className="flex items-center gap-1.5 text-sm text-white/80 hover:text-white transition-colors">
             <LogOut size={14} />
