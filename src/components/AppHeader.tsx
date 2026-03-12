@@ -24,7 +24,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
             <Boxes size={18} />
           </div>
           <div>
-            <div className="text-lg font-semibold leading-tight">Acme Foods Pty Ltd</div>
+            <div className="text-lg font-semibold leading-tight">Bibendum</div>
             <div className="text-[0.625rem] opacity-60">Inventory Management</div>
           </div>
           <ChevronDown size={14} className="opacity-60" />
