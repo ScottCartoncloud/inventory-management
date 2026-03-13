@@ -1,3 +1,4 @@
+import { useConnections } from "@/hooks/useConnections";
 import { LOCATIONS } from "@/data/locations";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +8,17 @@ interface LocationPillsProps {
 }
 
 export function LocationPills({ activeLocation, onLocationChange }: LocationPillsProps) {
+  const { data: connections } = useConnections();
+
+  // Use DB connections if available, otherwise fall back to hardcoded
+  const locations = (connections && connections.length > 0)
+    ? connections.filter(c => c.is_active).map(c => ({
+        id: c.code.toLowerCase(),
+        code: c.code,
+        color: c.color,
+      }))
+    : LOCATIONS.map(l => ({ id: l.id, code: l.code, color: l.color }));
+
   return (
     <div className="flex gap-1.5 flex-wrap">
       <button
@@ -20,7 +32,7 @@ export function LocationPills({ activeLocation, onLocationChange }: LocationPill
       >
         All Locations
       </button>
-      {LOCATIONS.map(loc => (
+      {locations.map(loc => (
         <button
           key={loc.id}
           className={cn(
