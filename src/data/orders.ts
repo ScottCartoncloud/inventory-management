@@ -15,16 +15,15 @@ export const ORDERS: Order[] = [];
 
 export interface PurchaseOrder {
   id: string;
+  numericId: string;
   ref: string;
-  supplier: string;
-  sku: string;
-  product: string;
+  customer: string;
+  deliveryAddress: string;
   qty: number;
   location: string;
   status: string;
   ordered: string;
   expectedArrival: string;
-  asn: string;
 }
 
 export const PURCHASE_ORDERS: PurchaseOrder[] = [];
