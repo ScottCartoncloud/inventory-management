@@ -1,0 +1,250 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  try {
+    // Extract connection_id from URL path
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split("/");
+    const connectionId = pathParts[pathParts.length - 1];
+    const secret = url.searchParams.get("secret");
+
+    if (!connectionId || connectionId === "cartoncloud-webhook") {
+      return new Response(
+        JSON.stringify({ error: "Missing connection_id in URL path" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate connection and secret
+    const { data: connection, error: connError } = await supabase
+      .from("connections")
+      .select("id, org_id, webhook_secret, name")
+      .eq("id", connectionId)
+      .single();
+
+    if (connError || !connection) {
+      return new Response(
+        JSON.stringify({ error: "Connection not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!connection.webhook_secret || connection.webhook_secret !== secret) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Parse payload
+    const payload = await req.json();
+    const eventType = payload.type || payload.status || "UNKNOWN";
+
+    // Store raw event
+    const { data: event, error: eventError } = await supabase
+      .from("webhook_events")
+      .insert({
+        connection_id: connectionId,
+        org_id: connection.org_id,
+        event_type: eventType,
+        cc_order_id: payload.id ? String(payload.id) : null,
+        payload,
+        processed: false,
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      console.error("Failed to store webhook event:", eventError);
+    }
+
+    // Process the order
+    try {
+      await processOutboundOrder(supabase, connection, payload);
+
+      if (event) {
+        await supabase
+          .from("webhook_events")
+          .update({ processed: true })
+          .eq("id", event.id);
+      }
+    } catch (err) {
+      console.error("Processing error:", err);
+      if (event) {
+        await supabase
+          .from("webhook_events")
+          .update({ processed: false, processing_error: (err as Error).message })
+          .eq("id", event.id);
+      }
+    }
+
+    // Always return 200 so CC doesn't retry
+    return new Response(
+      JSON.stringify({ received: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Webhook error:", error);
+    return new Response(
+      JSON.stringify({ received: true, error: (error as Error).message }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+function formatAddress(addr: Record<string, unknown> | undefined | null): string | null {
+  if (!addr) return null;
+  const state = addr.state as { code?: string; name?: string } | string | undefined;
+  const stateCode = typeof state === "string" ? state : state?.code || state?.name || "";
+  return [addr.address1, addr.suburb, stateCode, addr.postcode]
+    .filter(Boolean)
+    .join(", ") || null;
+}
+
+function parseTime(ts: { time?: string } | undefined | null): string | null {
+  return ts?.time ? new Date(ts.time).toISOString() : null;
+}
+
+async function processOutboundOrder(
+  supabase: ReturnType<typeof createClient>,
+  connection: { id: string; org_id: string },
+  payload: Record<string, unknown>
+) {
+  // Accept OUTBOUND type or any payload with an id (CC webhooks may vary)
+  if (payload.type && payload.type !== "OUTBOUND") {
+    console.log("Skipping non-outbound webhook:", payload.type);
+    return;
+  }
+
+  const details = payload.details as Record<string, unknown> | undefined;
+  const deliver = details?.deliver as Record<string, unknown> | undefined;
+  const collect = details?.collect as Record<string, unknown> | undefined;
+  const deliverAddr = deliver?.address as Record<string, unknown> | undefined;
+  const collectAddr = collect?.address as Record<string, unknown> | undefined;
+  const references = payload.references as Record<string, unknown> | undefined;
+  const timestamps = payload.timestamps as Record<string, { time?: string }> | undefined;
+  const customer = payload.customer as Record<string, unknown> | undefined;
+  const items = (payload.items || []) as Array<Record<string, unknown>>;
+
+  const totalQty = items.reduce((sum, item) => {
+    const measures = item.measures as Record<string, unknown> | undefined;
+    return sum + (Number(measures?.quantity) || 0);
+  }, 0);
+
+  const deliverMethod = deliver?.method as Record<string, unknown> | undefined;
+
+  // Upsert the order
+  const { data: order, error: orderError } = await supabase
+    .from("sale_orders")
+    .upsert(
+      {
+        connection_id: connection.id,
+        org_id: connection.org_id,
+        cc_order_id: String(payload.id),
+        cc_version: Number(payload.version) || null,
+        order_number: references?.customer ? String(references.customer) : null,
+        cc_numeric_id: references?.numericId ? String(references.numericId) : null,
+        source: "cartoncloud",
+        status: String(payload.status || "UNKNOWN"),
+        customer_name: (deliverAddr?.companyName || customer?.name || null) as string | null,
+        deliver_company: (deliverAddr?.companyName || null) as string | null,
+        deliver_address: formatAddress(deliverAddr),
+        deliver_method: (deliverMethod?.type || null) as string | null,
+        collect_company: (collectAddr?.companyName || null) as string | null,
+        collect_address: formatAddress(collectAddr),
+        urgent: Boolean((details as Record<string, unknown>)?.urgent) || false,
+        allow_splitting: (details as Record<string, unknown>)?.allowSplitting != null
+          ? Boolean((details as Record<string, unknown>)?.allowSplitting)
+          : true,
+        invoice_amount: null,
+        invoice_currency: "AUD",
+        total_qty: totalQty,
+        total_items: items.length,
+        cc_created_at: parseTime(timestamps?.created),
+        cc_modified_at: parseTime(timestamps?.modified),
+        cc_dispatched_at: parseTime(timestamps?.dispatched),
+        cc_packed_at: parseTime(timestamps?.packed),
+        raw_payload: payload,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "connection_id,cc_order_id" }
+    )
+    .select()
+    .single();
+
+  if (orderError) throw orderError;
+
+  // Delete existing items and re-insert
+  await supabase.from("sale_order_items").delete().eq("sale_order_id", order.id);
+
+  if (items.length > 0) {
+    // Match items to portal products via product_mappings
+    const productCodes = items
+      .map((item) => {
+        const d = item.details as Record<string, unknown> | undefined;
+        const product = d?.product as Record<string, unknown> | undefined;
+        const refs = product?.references as Record<string, unknown> | undefined;
+        return refs?.code ? String(refs.code) : null;
+      })
+      .filter(Boolean) as string[];
+
+    const { data: mappings } = await supabase
+      .from("product_mappings")
+      .select("cc_product_code, product_id")
+      .eq("connection_id", connection.id)
+      .in("cc_product_code", productCodes.length > 0 ? productCodes : ["__none__"]);
+
+    const mappingLookup: Record<string, string> = {};
+    (mappings || []).forEach((m) => {
+      mappingLookup[m.cc_product_code] = m.product_id;
+    });
+
+    const itemRows = items.map((item) => {
+      const d = item.details as Record<string, unknown> | undefined;
+      const product = d?.product as Record<string, unknown> | undefined;
+      const refs = product?.references as Record<string, unknown> | undefined;
+      const uom = d?.unitOfMeasure as Record<string, unknown> | undefined;
+      const measures = item.measures as Record<string, unknown> | undefined;
+      const props = item.properties as Record<string, unknown> | undefined;
+      const code = refs?.code ? String(refs.code) : null;
+
+      return {
+        sale_order_id: order.id,
+        cc_item_id: String(item.id),
+        cc_numeric_id: (item.references as Record<string, unknown>)?.numericId
+          ? String((item.references as Record<string, unknown>).numericId)
+          : null,
+        cc_product_id: product?.id ? String(product.id) : null,
+        cc_product_code: code,
+        product_name: product?.name ? String(product.name) : null,
+        product_id: code ? mappingLookup[code] || null : null,
+        quantity: Number(measures?.quantity) || 0,
+        unit_of_measure: uom?.type ? String(uom.type) : null,
+        uom_name: uom?.name ? String(uom.name) : null,
+        expiry_date: props?.expiryDate ? String(props.expiryDate) : null,
+        raw_item: item,
+      };
+    });
+
+    const { error: itemsError } = await supabase
+      .from("sale_order_items")
+      .insert(itemRows);
+
+    if (itemsError) throw itemsError;
+  }
+}
