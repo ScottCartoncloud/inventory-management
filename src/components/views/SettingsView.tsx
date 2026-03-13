@@ -69,10 +69,14 @@ export function SettingsView() {
                         <AccordionTrigger className="hover:no-underline py-4">
                           <div className="flex items-center gap-3 flex-1 mr-4">
                             <div
-                              className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0"
-                              style={{ background: conn.color }}
+                              className="w-10 h-10 rounded-md flex items-center justify-center overflow-hidden text-white font-bold text-xs shrink-0"
+                              style={{ background: conn.logo_url ? 'transparent' : conn.color }}
                             >
-                              {conn.code}
+                              {conn.logo_url ? (
+                                <img src={conn.logo_url} alt={conn.name} className="w-full h-full object-cover" />
+                              ) : (
+                                conn.code
+                              )}
                             </div>
                             <div className="text-left flex-1">
                               <div className="font-medium">{conn.name}</div>
