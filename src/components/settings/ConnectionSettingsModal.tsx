@@ -33,7 +33,7 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
               {connection.logo_url ? (
                 <img src={connection.logo_url} alt={connection.name} className="w-full h-full object-contain" />
               ) : (
-                connection.code.substring(0, 2).toUpperCase()
+                connection.name.substring(0, 2).toUpperCase()
               )}
             </div>
             <div>
