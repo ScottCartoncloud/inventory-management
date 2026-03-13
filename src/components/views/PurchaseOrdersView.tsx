@@ -18,7 +18,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
 
   const filtered = useMemo(() => PURCHASE_ORDERS.filter(o => {
     const matchLoc = activeLocation === "all" || o.location === activeLocation;
-    const matchSearch = !search || [o.id, o.supplier, o.ref, o.asn].some(v => v.toLowerCase().includes(search.toLowerCase()));
+    const matchSearch = !search || [o.id, o.ref, o.customer, o.deliveryAddress].some(v => v.toLowerCase().includes(search.toLowerCase()));
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [search, statusFilter, activeLocation]);
 
@@ -31,7 +31,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-8 h-8 w-56 text-sm" placeholder="PO ID, supplier, ASN…" value={search} onChange={e => setSearch(e.target.value)} />
+            <Input className="pl-8 h-8 w-56 text-sm" placeholder="PO ID, ref, customer…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <select className="h-8 px-3 pr-8 border border-border rounded-md bg-card text-sm outline-none cursor-pointer appearance-none" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="all">All Statuses</option>
@@ -46,13 +46,12 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
       <Table>
         <TableHeader>
           <TableRow className="bg-muted">
+            <TableHead>Reference</TableHead>
             <TableHead>PO ID</TableHead>
-            <TableHead>Ref</TableHead>
-            <TableHead>Supplier</TableHead>
-            <TableHead>Product / SKU</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Delivery Address</TableHead>
             <TableHead className="text-right">Qty</TableHead>
             <TableHead>Destination</TableHead>
-            <TableHead>ASN</TableHead>
             <TableHead>Ordered</TableHead>
             <TableHead>Expected Arrival</TableHead>
             <TableHead>Status</TableHead>
@@ -60,25 +59,19 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
-            <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+            <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
               <div className="text-4xl mb-3 opacity-30">📦</div>
               <div className="font-semibold mb-1">No purchase orders found</div>
               <div className="text-sm">Try adjusting your filters</div>
             </TableCell></TableRow>
           ) : filtered.map(order => (
             <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.id}</TableCell>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ref}</TableCell>
-              <TableCell>{order.supplier}</TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">{order.product}</span>
-                  <span className="text-xs text-muted-foreground font-mono">{order.sku}</span>
-                </div>
-              </TableCell>
+              <TableCell className="font-medium">{order.id}</TableCell>
+              <TableCell>{order.customer}</TableCell>
+              <TableCell className="text-muted-foreground text-[0.8125rem] max-w-[260px] truncate">{order.deliveryAddress}</TableCell>
               <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
               <TableCell><LocationChip locationId={order.location} /></TableCell>
-              <TableCell><span className="text-[hsl(210,100%,40%)] font-medium">{order.asn}</span></TableCell>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ordered}</TableCell>
               <TableCell className="text-[0.8125rem]">{order.expectedArrival}</TableCell>
               <TableCell><StatusBadge status={order.status} /></TableCell>
