@@ -141,6 +141,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.ref || "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-[0.8125rem]">{order.id}</TableCell>
+                    <TableCell>{order.customer || "—"}</TableCell>
                     <TableCell className="text-[0.8125rem] max-w-[300px] truncate" title={order.deliveryAddress}>{order.deliveryAddress || "—"}</TableCell>
                     <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
                     <TableCell><LocationChip locationId={order.location} /></TableCell>
