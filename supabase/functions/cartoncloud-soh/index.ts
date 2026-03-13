@@ -92,6 +92,8 @@ Deno.serve(async (req) => {
     let reportStatus = reportRun.status;
     let completedReport = reportRun;
 
+    const terminalFailures = new Set(["FAILED", "ERROR", "CANCELLED"]);
+
     for (let i = 0; i < maxPolls && reportStatus === "IN_PROCESS"; i++) {
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
 
@@ -116,9 +118,14 @@ Deno.serve(async (req) => {
       completedReport = await pollResponse.json();
       reportStatus = completedReport.status;
       console.log(`CC SOH poll ${i + 1}: status=${reportStatus}`);
+
+      if (terminalFailures.has(reportStatus)) {
+        console.error("CC SOH report failed:", reportStatus);
+        return json({ error: `Report failed with status: ${reportStatus}` }, 502);
+      }
     }
 
-    if (reportStatus !== "COMPLETED" && reportStatus !== "COMPLETE") {
+    if (reportStatus !== "SUCCESS") {
       console.error("CC SOH report did not complete. Final status:", reportStatus);
       return json(
         { error: `Report did not complete in time. Status: ${reportStatus}` },
