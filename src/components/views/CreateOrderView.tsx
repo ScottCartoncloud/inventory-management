@@ -32,12 +32,6 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
 
-  // Custom fields
-  const [customFieldsOpen, setCustomFieldsOpen] = useState(false);
-  const [batchNumber, setBatchNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
-  const [tempZone, setTempZone] = useState("");
-  const [priority, setPriority] = useState("");
 
   // Line items
   const [lineSearch, setLineSearch] = useState("");
