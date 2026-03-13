@@ -2,3 +2,6 @@ project_id = "httlmwzinkqelzkjjaqf"
 
 [functions.cartoncloud-proxy]
 verify_jwt = false
+
+[functions.cartoncloud-soh]
+verify_jwt = false

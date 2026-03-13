@@ -49,6 +49,8 @@ export type Database = {
       connections: {
         Row: {
           api_endpoint: string
+          cc_customer_id: string | null
+          cc_warehouse_name: string | null
           client_id: string | null
           client_secret: string | null
           code: string
@@ -65,11 +67,15 @@ export type Database = {
           product_last_synced_at: string | null
           product_match_strategy: string
           product_sync_mode: string
+          soh_last_refreshed_at: string | null
+          soh_refresh_interval: string | null
           tenant_id: string | null
           updated_at: string
         }
         Insert: {
           api_endpoint?: string
+          cc_customer_id?: string | null
+          cc_warehouse_name?: string | null
           client_id?: string | null
           client_secret?: string | null
           code: string
@@ -86,11 +92,15 @@ export type Database = {
           product_last_synced_at?: string | null
           product_match_strategy?: string
           product_sync_mode?: string
+          soh_last_refreshed_at?: string | null
+          soh_refresh_interval?: string | null
           tenant_id?: string | null
           updated_at?: string
         }
         Update: {
           api_endpoint?: string
+          cc_customer_id?: string | null
+          cc_warehouse_name?: string | null
           client_id?: string | null
           client_secret?: string | null
           code?: string
@@ -107,6 +117,8 @@ export type Database = {
           product_last_synced_at?: string | null
           product_match_strategy?: string
           product_sync_mode?: string
+          soh_last_refreshed_at?: string | null
+          soh_refresh_interval?: string | null
           tenant_id?: string | null
           updated_at?: string
         }
@@ -266,6 +278,57 @@ export type Database = {
           width?: number | null
         }
         Relationships: []
+      }
+      stock_on_hand: {
+        Row: {
+          cc_product_code: string
+          connection_id: string
+          id: string
+          last_updated_at: string
+          product_id: string
+          product_status: string
+          qty: number
+          raw_response: Json | null
+          unit_of_measure: string | null
+        }
+        Insert: {
+          cc_product_code: string
+          connection_id: string
+          id?: string
+          last_updated_at?: string
+          product_id: string
+          product_status?: string
+          qty?: number
+          raw_response?: Json | null
+          unit_of_measure?: string | null
+        }
+        Update: {
+          cc_product_code?: string
+          connection_id?: string
+          id?: string
+          last_updated_at?: string
+          product_id?: string
+          product_status?: string
+          qty?: number
+          raw_response?: Json | null
+          unit_of_measure?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_on_hand_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_on_hand_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

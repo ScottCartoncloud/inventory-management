@@ -1,16 +1,21 @@
-// TODO: Replace hardcoded PRODUCTS with live CartonCloud SOH queries per location when ready
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LOCATIONS } from "@/data/locations";
-import { PRODUCTS } from "@/data/products";
-import { getSOH, getStockStatus } from "@/data/inventory-utils";
 import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
-import { QtyCell } from "@/components/QtyCell";
 import { SummaryBar } from "@/components/SummaryBar";
-import { Search, Download } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Search, Download, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  useSOHSummary,
+  useRefreshAllSOH,
+  getSOHFreshnessStatus,
+  getSOHFreshnessLabel,
+  type SOHProductSummary,
+} from "@/hooks/useStockOnHand";
+import { isConnectionConfigured } from "@/hooks/useConnections";
+import { toast } from "@/hooks/use-toast";
 
 interface InventoryViewProps {
   activeLocation: string;
@@ -22,18 +27,74 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
 
-  const categories = ["all", ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
+  const { summary, isLoading, hasData, connections } = useSOHSummary();
+  const refreshAll = useRefreshAllSOH();
 
-  const filtered = useMemo(() => PRODUCTS.filter(p => {
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
-    const matchCat = categoryFilter === "all" || p.category === categoryFilter;
-    const soh = getSOH(p, activeLocation);
-    const status = getStockStatus(soh, p.minQty);
+  const configuredConnections = connections.filter(c => c.is_active && isConnectionConfigured(c));
+  const freshness = getSOHFreshnessStatus(connections);
+  const freshnessLabel = getSOHFreshnessLabel(connections);
+
+  const categories = useMemo(() => {
+    const cats = new Set(summary.map(p => p.product_category));
+    return ["all", ...Array.from(cats)];
+  }, [summary]);
+
+  const getQty = (p: SOHProductSummary, loc: string): number => {
+    if (loc === "all") return p.total_qty;
+    const conn = p.connections.find(c => c.connection_code.toLowerCase() === loc);
+    return conn?.total_qty ?? 0;
+  };
+
+  const getStockStatus = (qty: number, minQty: number): "ok" | "low" | "out" => {
+    if (qty === 0) return "out";
+    if (qty < minQty) return "low";
+    return "ok";
+  };
+
+  const filtered = useMemo(() => summary.filter(p => {
+    const matchSearch = !search ||
+      p.product_name.toLowerCase().includes(search.toLowerCase()) ||
+      p.product_sku.toLowerCase().includes(search.toLowerCase());
+    const matchCat = categoryFilter === "all" || p.product_category === categoryFilter;
+    const qty = getQty(p, activeLocation);
+    const status = getStockStatus(qty, p.product_min_qty);
     return matchSearch && matchCat && (stockFilter === "all" || status === stockFilter);
-  }), [search, categoryFilter, stockFilter, activeLocation]);
+  }), [search, categoryFilter, stockFilter, activeLocation, summary]);
 
-  const totalOnHand = filtered.reduce((s, p) => s + getSOH(p, activeLocation), 0);
+  const totalOnHand = filtered.reduce((s, p) => s + getQty(p, activeLocation), 0);
   const showCols = activeLocation === "all";
+
+  const handleRefresh = async () => {
+    try {
+      const result = await refreshAll.mutateAsync();
+      const successCount = result.successes.length;
+      const failCount = result.failures.length;
+      if (failCount === 0) {
+        toast({
+          title: "SOH Refreshed",
+          description: `${result.totalMatched} products updated across ${successCount} location${successCount !== 1 ? "s" : ""}.`,
+        });
+      } else {
+        const failedNames = result.failures.map((f: any) => f.connection?.code || "Unknown").join(", ");
+        toast({
+          title: "SOH Partially Refreshed",
+          description: `${successCount} succeeded. Failed: ${failedNames}`,
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      toast({ title: "Refresh Failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const freshnessColor = freshness === "fresh"
+    ? "hsl(142,76%,36%)"
+    : freshness === "stale"
+      ? "hsl(38,92%,50%)"
+      : "hsl(0,84%,60%)";
+
+  // Empty state: no connections configured with customer ID
+  const hasSOHCapableConnections = configuredConnections.some(c => (c as any).cc_customer_id);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -41,10 +102,24 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
       <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-1 flex-wrap">
           <span className="text-base font-semibold">Stock on Hand</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[hsl(142,76%,36%)] animate-pulse" />
-            <span className="text-xs text-muted-foreground">Live</span>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 cursor-default">
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: freshnessColor }}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {freshness === "never" ? "No data" : freshness === "fresh" ? "Live" : freshness === "stale" ? "Stale" : "Old"}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">{freshnessLabel}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <LocationPills activeLocation={activeLocation} onLocationChange={onLocationChange} />
         </div>
         <div className="flex items-center gap-2">
@@ -61,76 +136,167 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
             <option value="low">Low Stock</option>
             <option value="out">Out of Stock</option>
           </select>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshAll.isPending || !hasSOHCapableConnections}>
+            {refreshAll.isPending ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            Refresh SOH
+          </Button>
           <Button variant="outline" size="sm"><Download size={14} />Export CSV</Button>
         </div>
       </div>
 
       <SummaryBar items={[
-        { label: "Showing", value: `${filtered.length} of ${PRODUCTS.length} SKUs` },
+        { label: "Showing", value: `${filtered.length} of ${summary.length} SKUs` },
         { label: "Total Units", value: totalOnHand.toLocaleString() },
-        { label: "Low Stock", value: String(filtered.filter(p => getStockStatus(getSOH(p, activeLocation), p.minQty) === "low").length), className: "text-[hsl(38,92%,50%)]" },
-        { label: "Out of Stock", value: String(filtered.filter(p => getSOH(p, activeLocation) === 0).length), className: "text-destructive" },
+        { label: "Low Stock", value: String(filtered.filter(p => getStockStatus(getQty(p, activeLocation), p.product_min_qty) === "low").length), className: "text-[hsl(38,92%,50%)]" },
+        { label: "Out of Stock", value: String(filtered.filter(p => getQty(p, activeLocation) === 0).length), className: "text-destructive" },
       ]} />
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead>Product / SKU</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Unit</TableHead>
-              {showCols ? (
-                <>
-                  {LOCATIONS.map(loc => <TableHead key={loc.id} className="text-right" style={{ color: loc.color }}>{loc.code}</TableHead>)}
-                  <TableHead className="text-right">Total</TableHead>
-                </>
-              ) : (
-                <>
-                  <TableHead className="text-right">On Hand</TableHead>
-                  <TableHead className="text-right">Min Qty</TableHead>
-                </>
-              )}
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={showCols ? 9 : 6} className="text-center py-12 text-muted-foreground">
-                <div className="text-4xl mb-3 opacity-30">📦</div>
-                <div className="font-semibold mb-1">No products found</div>
-                <div className="text-sm">Try adjusting your filters</div>
-              </TableCell></TableRow>
-            ) : filtered.map(product => {
-              const qty = getSOH(product, activeLocation);
-              return (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium">{product.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
-                    </div>
+        {!hasData && !isLoading && !hasSOHCapableConnections ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <div className="text-5xl opacity-30">📦</div>
+            <div className="font-semibold text-lg">Connect a CartonCloud warehouse to see live stock levels</div>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Go to Settings → Connections and configure a connection with a Customer ID to enable Stock on Hand reporting.
+            </p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted">
+                <TableHead>Product / SKU</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Unit</TableHead>
+                {showCols ? (
+                  <>
+                    {configuredConnections.map(conn => (
+                      <TableHead key={conn.id} className="text-right" style={{ color: conn.color }}>
+                        {conn.code}
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-right">Total</TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead className="text-right">On Hand</TableHead>
+                    <TableHead className="text-right">Min Qty</TableHead>
+                  </>
+                )}
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={showCols ? 4 + configuredConnections.length + 1 : 6} className="text-center py-12">
+                    <Loader2 className="mx-auto animate-spin text-muted-foreground" size={24} />
                   </TableCell>
-                  <TableCell><span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">{product.category}</span></TableCell>
-                  <TableCell className="text-muted-foreground text-[0.8125rem]">{product.unit}</TableCell>
-                  {showCols ? (
-                    <>
-                      {LOCATIONS.map(loc => <TableCell key={loc.id} className="text-right"><QtyCell qty={(product as any)[loc.id]} minQty={product.minQty} locationId={loc.id} /></TableCell>)}
-                      <TableCell className="text-right font-semibold">{qty.toLocaleString()}</TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell className="text-right"><QtyCell qty={qty} minQty={product.minQty} locationId={activeLocation} /></TableCell>
-                      <TableCell className="text-right text-muted-foreground text-[0.8125rem]">{product.minQty}</TableCell>
-                    </>
-                  )}
-                  <TableCell><StatusBadge status={getStockStatus(qty, product.minQty)} /></TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={showCols ? 4 + configuredConnections.length + 1 : 6} className="text-center py-12 text-muted-foreground">
+                    <div className="text-4xl mb-3 opacity-30">📦</div>
+                    <div className="font-semibold mb-1">No products found</div>
+                    <div className="text-sm">Try adjusting your filters</div>
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map(product => {
+                const qty = getQty(product, activeLocation);
+                const status = getStockStatus(qty, product.product_min_qty);
+                return (
+                  <TableRow key={product.product_id}>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{product.product_name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{product.product_sku}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell><span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">{product.product_category}</span></TableCell>
+                    <TableCell className="text-muted-foreground text-[0.8125rem]">{product.product_unit}</TableCell>
+                    {showCols ? (
+                      <>
+                        {configuredConnections.map(conn => {
+                          const connData = product.connections.find(c => c.connection_id === conn.id);
+                          const connQty = connData?.total_qty ?? 0;
+                          const hasWarning = connData?.has_non_available ?? false;
+                          return (
+                            <TableCell key={conn.id} className="text-right">
+                              <SOHCell
+                                qty={connQty}
+                                minQty={product.product_min_qty}
+                                hasWarning={hasWarning}
+                                breakdown={connData?.status_breakdown}
+                              />
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-right font-semibold">{qty.toLocaleString()}</TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell className="text-right">
+                          {(() => {
+                            const connData = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+                            return (
+                              <SOHCell
+                                qty={qty}
+                                minQty={product.product_min_qty}
+                                hasWarning={connData?.has_non_available ?? false}
+                                breakdown={connData?.status_breakdown}
+                              />
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground text-[0.8125rem]">{product.product_min_qty}</TableCell>
+                      </>
+                    )}
+                    <TableCell><StatusBadge status={status} /></TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
+  );
+}
+
+function SOHCell({ qty, minQty, hasWarning, breakdown }: {
+  qty: number;
+  minQty: number;
+  hasWarning: boolean;
+  breakdown?: { status: string; qty: number }[];
+}) {
+  if (qty === 0) {
+    return <span className="inline-block px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs">—</span>;
+  }
+
+  const color = qty < minQty ? "text-[hsl(38,92%,50%)] font-semibold" : "text-foreground font-medium";
+
+  if (!hasWarning || !breakdown) {
+    return <span className={color}>{qty.toLocaleString()}</span>;
+  }
+
+  const tooltipText = breakdown
+    .filter(b => b.qty > 0)
+    .map(b => `${b.qty.toLocaleString()} ${b.status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}`)
+    .join(" · ");
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`${color} inline-flex items-center gap-1 cursor-default`}>
+            {qty.toLocaleString()}
+            <AlertTriangle size={12} className="text-[hsl(38,92%,50%)]" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs">{tooltipText}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

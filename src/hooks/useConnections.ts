@@ -21,6 +21,10 @@ export interface Connection {
   product_last_sync_matched: number | null;
   product_last_sync_unmatched_cc: number | null;
   product_last_sync_unmatched_portal: number | null;
+  cc_customer_id: string | null;
+  cc_warehouse_name: string | null;
+  soh_refresh_interval: string;
+  soh_last_refreshed_at: string | null;
 }
 
 export function useConnections() {
@@ -54,7 +58,9 @@ export function useUpsertConnection() {
             client_secret: conn.client_secret,
             logo_url: conn.logo_url,
             is_active: conn.is_active,
-          })
+            cc_customer_id: conn.cc_customer_id,
+            cc_warehouse_name: conn.cc_warehouse_name,
+          } as any)
           .eq("id", conn.id)
           .select()
           .single();

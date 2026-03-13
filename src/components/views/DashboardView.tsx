@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { useConnections, isConnectionConfigured, type Connection } from "@/hooks/useConnections";
 import { useOrders } from "@/hooks/useOrders";
 import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
+import { useSOHSummary } from "@/hooks/useStockOnHand";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { MapPin, AlertTriangle, ClipboardCheck, Cloud, PackageOpen } from "lucide-react";
@@ -15,20 +16,39 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { orders, isLoading: ordersLoading } = useOrders();
   const { purchaseOrders, isLoading: poLoading } = usePurchaseOrders();
+  const { summary: sohSummary, hasData: hasSOHData, isLoading: sohLoading } = useSOHSummary();
 
   const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
   const activeOrders = orders.filter(o => o.status !== "completed").length;
   const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
   const pendingInbound = purchaseOrders.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length;
 
+  // SOH stats from live data
+  const totalUnits = hasSOHData
+    ? sohSummary.reduce((s, p) => s + p.total_qty, 0)
+    : 0;
+  const lowStockCount = hasSOHData
+    ? sohSummary.filter(p => p.total_qty > 0 && p.total_qty < p.product_min_qty).length
+    : 0;
+  const outOfStockCount = hasSOHData
+    ? sohSummary.filter(p => p.total_qty === 0 && p.product_min_qty > 0).length
+    : 0;
+
   const locStats = configuredConnections.map(conn => {
     const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
     const connPOs = purchaseOrders.filter(o => o.location === conn.code.toLowerCase());
+    const connUnits = hasSOHData
+      ? sohSummary.reduce((s, p) => {
+          const c = p.connections.find(c => c.connection_id === conn.id);
+          return s + (c?.total_qty ?? 0);
+        }, 0)
+      : 0;
     return {
       ...conn,
       activeOrders: connOrders.filter(o => o.status !== "completed").length,
       totalOrders: connOrders.length,
       pendingInbound: connPOs.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length,
+      stockUnits: connUnits,
     };
   });
 
@@ -36,8 +56,8 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
   const stats = [
     { label: "Connected Locations", value: configuredConnections.length, sub: `${(connections || []).length} total configured`, cls: "text-primary" },
-    { label: "Total Orders", value: orders.length, sub: "From all connections", cls: "" },
-    { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "text-[hsl(142,76%,36%)]" },
+    { label: "Total Units on Hand", value: totalUnits.toLocaleString(), sub: hasSOHData ? `${lowStockCount} low, ${outOfStockCount} out` : "Refresh SOH to populate", cls: "text-[hsl(142,76%,36%)]" },
+    { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "" },
     { label: "Pending Inbound", value: pendingInbound, sub: `${purchaseOrders.length} total POs`, cls: "text-[hsl(38,92%,50%)]" },
   ];
 
@@ -94,12 +114,12 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 </div>
                 <div className="p-3 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[0.8125rem] text-muted-foreground">Active Orders</span>
-                    <span className="text-[0.9375rem] font-semibold text-primary">{loc.activeOrders}</span>
+                    <span className="text-[0.8125rem] text-muted-foreground">Stock Units</span>
+                    <span className="text-[0.9375rem] font-semibold text-[hsl(142,76%,36%)]">{loc.stockUnits.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[0.8125rem] text-muted-foreground">Total Orders</span>
-                    <span className="text-[0.9375rem] font-semibold">{loc.totalOrders}</span>
+                    <span className="text-[0.8125rem] text-muted-foreground">Active Orders</span>
+                    <span className="text-[0.9375rem] font-semibold text-primary">{loc.activeOrders}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[0.8125rem] text-muted-foreground">Pending Inbound</span>
@@ -114,6 +134,47 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* Lower section */}
       <div className="grid grid-cols-2 gap-4 max-[1100px]:grid-cols-1">
+        {/* Stock Alerts */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between p-3.5 border-b border-border">
+            <span className="text-[0.9375rem] font-semibold flex items-center gap-2">
+              <AlertTriangle size={15} className="text-[hsl(38,92%,50%)]" />
+              Stock Alerts
+            </span>
+            <button className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors" onClick={() => onNavigate("inventory", "all")}>View SOH</button>
+          </div>
+          {sohLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : !hasSOHData ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">Refresh SOH data to see stock alerts.</div>
+          ) : (() => {
+            const alerts = sohSummary
+              .filter(p => p.product_min_qty > 0 && p.total_qty < p.product_min_qty)
+              .sort((a, b) => a.total_qty - b.total_qty)
+              .slice(0, 5);
+            return alerts.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">All products above minimum stock levels.</div>
+            ) : (
+              alerts.map((p, i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted transition-colors">
+                  <div>
+                    <div className="text-sm font-medium">{p.product_name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{p.product_sku}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-semibold ${p.total_qty === 0 ? "text-destructive" : "text-[hsl(38,92%,50%)]"}`}>
+                      {p.total_qty.toLocaleString()} / {p.product_min_qty}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{p.total_qty === 0 ? "Out of Stock" : "Low Stock"}</div>
+                  </div>
+                </div>
+              ))
+            );
+          })()}
+        </Card>
+
         {/* Recent Orders */}
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between p-3.5 border-b border-border">
@@ -125,9 +186,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </div>
           {ordersLoading ? (
             <div className="p-4 space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
             </div>
           ) : recentOrders.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">No orders loaded yet.</div>
@@ -145,50 +204,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               </div>
             ))
           )}
-        </Card>
-
-        {/* Connection Status */}
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between p-3.5 border-b border-border">
-            <span className="text-[0.9375rem] font-semibold flex items-center gap-2">
-              <Cloud size={15} className="text-primary" />
-              Connection Status
-            </span>
-            <button className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors" onClick={() => onNavigate("settings")}>Manage</button>
-          </div>
-          {(connections || []).map((conn, i) => {
-            const configured = isConnectionConfigured(conn);
-            return (
-              <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded flex items-center justify-center overflow-hidden text-white font-bold text-[0.625rem] shrink-0 border"
-                    style={{
-                      background: conn.logo_url ? 'hsl(var(--background))' : conn.color,
-                      borderColor: conn.color,
-                    }}
-                  >
-                    {conn.logo_url ? (
-                      <img src={conn.logo_url} alt={conn.name} className="w-full h-full object-contain" />
-                    ) : (
-                      conn.code
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{conn.name}</div>
-                    <div className="text-xs text-muted-foreground">{conn.code}</div>
-                  </div>
-                </div>
-                <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  configured
-                    ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)]"
-                    : "bg-muted text-muted-foreground"
-                }`}>
-                  {configured ? "Connected" : "Not Configured"}
-                </div>
-              </div>
-            );
-          })}
         </Card>
       </div>
     </div>
