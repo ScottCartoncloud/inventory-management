@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useUpsertConnection, useTestConnection, type Connection } from "@/hooks/useConnections";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -26,7 +26,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const hasCredentials = !!(connection.client_id && connection.client_secret && connection.tenant_id);
   const [isEditing, setIsEditing] = useState(!hasCredentials);
   const [showSecret, setShowSecret] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   const [tenantId, setTenantId] = useState(connection.tenant_id || "");
   const [clientId, setClientId] = useState(connection.client_id || "");
@@ -40,12 +39,18 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const canSave = !!(tenantId && clientId && clientSecret);
 
   const handleTestConnection = async () => {
-    setTestResult(null);
     try {
       await testMutation.mutateAsync(connection.id);
-      setTestResult("success");
+      toast({ 
+        title: "✓ Connection Successful", 
+        description: `Successfully connected to ${connection.name}.`,
+      });
     } catch {
-      setTestResult("error");
+      toast({ 
+        title: "✗ Connection Failed", 
+        description: "Unable to connect. Please check your credentials and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -64,7 +69,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         logo_url: connection.logo_url,
       });
       setIsEditing(false);
-      setTestResult(null);
       toast({ title: "Saved", description: `Connection for ${connection.code} updated.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -89,7 +93,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
       setClientId("");
       setClientSecret("");
       setIsEditing(true);
-      setTestResult(null);
       toast({ title: "Disconnected", description: `${connection.code} credentials removed.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -153,17 +156,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
           )}
         </div>
       </div>
-
-      {testResult && (
-        <div className={`flex items-center gap-2 text-sm rounded-md p-3 ${
-          testResult === "success"
-            ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)]"
-            : "bg-destructive/10 text-destructive"
-        }`}>
-          {testResult === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          {testResult === "success" ? "Connection successful!" : "Connection failed. Please check your credentials."}
-        </div>
-      )}
 
       <div className="flex gap-2 pt-2">
         <Button

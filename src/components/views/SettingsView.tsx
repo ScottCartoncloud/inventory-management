@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useConnections, isConnectionConfigured, useTestConnection, type Connection } from "@/hooks/useConnections";
 import { ConnectionSettingsModal } from "@/components/settings/ConnectionSettingsModal";
-import { Settings, Plus, Cloud, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Settings, Plus, Cloud, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 export function SettingsView() {
   const { data: connections, isLoading } = useConnections();
@@ -94,19 +95,22 @@ export function SettingsView() {
 function ConnectionSummaryRow({ connection, onManage }: { connection: Connection; onManage: () => void }) {
   const configured = isConnectionConfigured(connection);
   const testMutation = useTestConnection();
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   const handleTest = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!configured) return;
-    setTestResult(null);
     try {
       await testMutation.mutateAsync(connection.id);
-      setTestResult("success");
-      setTimeout(() => setTestResult(null), 3000);
+      toast({ 
+        title: "✓ Connection Successful", 
+        description: `Successfully connected to ${connection.name}.`,
+      });
     } catch {
-      setTestResult("error");
-      setTimeout(() => setTestResult(null), 5000);
+      toast({ 
+        title: "✗ Connection Failed", 
+        description: "Unable to connect. Please check your credentials and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -138,9 +142,6 @@ function ConnectionSummaryRow({ connection, onManage }: { connection: Connection
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {testResult === "success" && <CheckCircle size={14} className="text-[hsl(142,76%,36%)]" />}
-        {testResult === "error" && <XCircle size={14} className="text-destructive" />}
-
         <Badge
           variant="outline"
           className={configured
