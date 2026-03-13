@@ -71,7 +71,8 @@ export function ProductsView() {
         const existingSkus = new Set(products.map(p => p.sku.toLowerCase()));
 
         for (const cc of ccProducts) {
-          const code = cc.code || cc.product?.code;
+          // warehouse-products/search returns references.code, not top-level code
+          const code = cc.references?.code || cc.code || cc.product?.code;
           const name = cc.name || cc.product?.name || code;
           if (!code) continue;
           if (existingSkus.has(code.toLowerCase())) continue; // skip duplicates
@@ -83,12 +84,15 @@ export function ProductsView() {
           const length = cc.length || cc.product?.length;
           const barcode = cc.barcode || cc.product?.barcode;
 
-          const uomsRaw = cc.unitsOfMeasure || cc.product?.unitsOfMeasure || [];
-          const uoms = uomsRaw.map((u: any, i: number) => ({
-            name: u.name || u.type || "Each",
-            qty: u.quantity || 1,
-            sort_order: i,
-          }));
+          // unitOfMeasures is an object keyed by type (e.g. {CTN: {...}, PLT: {...}})
+          const uomsObj = cc.unitOfMeasures || cc.unitsOfMeasure || {};
+          const uoms = (Array.isArray(uomsObj) ? uomsObj : Object.entries(uomsObj)).map((entry: any, i: number) => {
+            if (Array.isArray(uomsObj)) {
+              return { name: entry.name || entry.type || "Each", qty: entry.quantity || entry.baseQty || 1, sort_order: i };
+            }
+            const [type, val] = entry;
+            return { name: val.name || type, qty: val.baseQty || 1, sort_order: i };
+          });
 
           const { data: newProduct, error: insertErr } = await supabase
             .from("products")
