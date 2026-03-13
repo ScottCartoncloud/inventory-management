@@ -4,15 +4,15 @@ import { useConnections, isConnectionConfigured, type Connection } from "./useCo
 import { ORDERS, type Order } from "@/data/orders";
 
 interface CartonCloudAddress {
-  street1?: string;
-  street2?: string;
+  address1?: string;
+  address2?: string;
+  companyName?: string;
+  contactName?: string;
   city?: string;
   suburb?: string;
-  state?: string;
+  state?: { name?: string; code?: string } | string;
   postcode?: string;
-  country?: string;
-  name?: string;
-  contactName?: string;
+  country?: { name?: string } | string;
 }
 
 interface CartonCloudOrder {
@@ -52,22 +52,28 @@ function safeString(val: unknown): string {
   return String(val);
 }
 
-function formatAddress(deliver?: CartonCloudOrder["details"]): string {
-  if (!deliver?.deliver) return "";
-  const addr = deliver.deliver.address;
-  const deliverName = safeString(deliver.deliver.name) || safeString(addr?.name) || safeString(addr?.contactName);
-  
+function getStateCode(state?: CartonCloudAddress["state"]): string {
+  if (!state) return "";
+  if (typeof state === "string") return state;
+  return state.code || state.name || "";
+}
+
+function formatAddress(details?: CartonCloudOrder["details"]): string {
+  if (!details?.deliver?.address) return "";
+  const addr = details.deliver.address;
+  const name = addr.companyName || addr.contactName || "";
+
   const parts = [
-    safeString(addr?.street1),
-    safeString(addr?.street2),
-    safeString(addr?.suburb) || safeString(addr?.city),
-    safeString(addr?.state),
-    safeString(addr?.postcode),
+    safeString(addr.address1),
+    safeString(addr.address2),
+    safeString(addr.suburb) || safeString(addr.city),
+    getStateCode(addr.state),
+    safeString(addr.postcode),
   ].filter(Boolean);
-  
+
   const addressLine = parts.join(", ");
-  if (deliverName && addressLine) return `${deliverName}, ${addressLine}`;
-  return deliverName || addressLine;
+  if (name && addressLine) return `${name}, ${addressLine}`;
+  return name || addressLine;
 }
 
 function transformOrder(
