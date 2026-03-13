@@ -1,3 +1,4 @@
+// TODO: Replace hardcoded PRODUCTS with live CartonCloud SOH queries per location when ready
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

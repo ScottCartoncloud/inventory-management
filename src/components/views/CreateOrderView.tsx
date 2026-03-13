@@ -1,3 +1,4 @@
+// TODO: Replace hardcoded PRODUCTS with live CartonCloud SOH queries when ready
 import { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
