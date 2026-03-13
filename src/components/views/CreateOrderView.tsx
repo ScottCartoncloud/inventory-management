@@ -7,14 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LOCATIONS } from "@/data/locations";
 import { PRODUCTS } from "@/data/products";
 import { getSOH } from "@/data/inventory-utils";
 import { LocationChip } from "@/components/LocationChip";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, ChevronDown, FileUp, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 
 interface CreateOrderViewProps {
@@ -32,12 +31,6 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
 
-  // Custom fields
-  const [customFieldsOpen, setCustomFieldsOpen] = useState(false);
-  const [batchNumber, setBatchNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
-  const [tempZone, setTempZone] = useState("");
-  const [priority, setPriority] = useState("");
 
   // Line items
   const [lineSearch, setLineSearch] = useState("");
@@ -242,63 +235,6 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                 </div>
               </Card>
 
-              {/* Custom Fields */}
-              <Collapsible open={customFieldsOpen} onOpenChange={setCustomFieldsOpen}>
-                <Card className="p-5">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full">
-                    <div>
-                      <h2 className="font-semibold text-base text-left">Custom Fields</h2>
-                      <p className="text-xs text-muted-foreground text-left">Additional fields configured by your 3PL provider</p>
-                    </div>
-                    <ChevronDown size={16} className={`text-muted-foreground transition-transform ${customFieldsOpen ? "rotate-180" : ""}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-4 space-y-4">
-                    <p className="text-xs text-muted-foreground italic">These fields are defined by your warehouse provider and may vary per location.</p>
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Batch Number</label>
-                        <Input value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="e.g. BATCH-2024-A1" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Expiry Date</label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarIcon size={14} className="mr-2 text-muted-foreground" />
-                              {expiryDate ? format(expiryDate, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={expiryDate} onSelect={setExpiryDate} initialFocus />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Temperature Zone</label>
-                        <Select value={tempZone} onValueChange={setTempZone}>
-                          <SelectTrigger><SelectValue placeholder="Select zone…" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ambient">Ambient</SelectItem>
-                            <SelectItem value="chilled">Chilled</SelectItem>
-                            <SelectItem value="frozen">Frozen</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Priority</label>
-                        <Select value={priority} onValueChange={setPriority}>
-                          <SelectTrigger><SelectValue placeholder="Select priority…" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="standard">Standard</SelectItem>
-                            <SelectItem value="express">Express</SelectItem>
-                            <SelectItem value="urgent">Urgent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
             </div>
 
             {/* Column 2: Line Items */}
