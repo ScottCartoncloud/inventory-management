@@ -1,47 +1,39 @@
 import { Card } from "@/components/ui/card";
-import { LOCATIONS } from "@/data/locations";
-import { PRODUCTS } from "@/data/products";
-import { ORDERS } from "@/data/orders";
-import { getSOH, getStockStatus } from "@/data/inventory-utils";
+import { useConnections, isConnectionConfigured, type Connection } from "@/hooks/useConnections";
+import { useOrders } from "@/hooks/useOrders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
-import { MapPin, AlertTriangle, ClipboardCheck } from "lucide-react";
+import { MapPin, AlertTriangle, ClipboardCheck, Cloud } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardViewProps {
   onNavigate: (tab: string, location?: string) => void;
 }
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
-  const totalSKUs = PRODUCTS.length;
-  const totalQty = PRODUCTS.reduce((s, p) => s + p.syd + p.mel + p.bne + p.per, 0);
-  const lowStockItems = PRODUCTS.filter(p => ["syd", "mel", "bne", "per"].some(loc => (p as any)[loc] > 0 && (p as any)[loc] < p.minQty));
-  const outOfStockInstances = PRODUCTS.reduce((s, p) => s + ["syd", "mel", "bne", "per"].filter(loc => (p as any)[loc] === 0).length, 0);
-  const activeOrders = ORDERS.filter(o => o.status !== "completed").length;
+  const { data: connections, isLoading: connectionsLoading } = useConnections();
+  const { orders, isLoading: ordersLoading } = useOrders();
 
-  const locStats = LOCATIONS.map(loc => ({
-    ...loc,
-    totalSKUs: PRODUCTS.filter(p => (p as any)[loc.id] > 0).length,
-    totalQty: PRODUCTS.reduce((s, p) => s + ((p as any)[loc.id] || 0), 0),
-    lowStock: PRODUCTS.filter(p => (p as any)[loc.id] > 0 && (p as any)[loc.id] < p.minQty).length,
-    orders: ORDERS.filter(o => o.location === loc.id && o.status !== "completed").length,
-  }));
+  const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
+  const activeOrders = orders.filter(o => o.status !== "completed").length;
+  const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
 
-  const allLowAlerts = PRODUCTS.flatMap(p =>
-    LOCATIONS.map(loc => {
-      const qty = (p as any)[loc.id] as number;
-      if (qty === 0) return { ...p, locId: loc.id, locName: loc.name, qty, type: "out" as const };
-      if (qty < p.minQty) return { ...p, locId: loc.id, locName: loc.name, qty, type: "low" as const };
-      return null;
-    }).filter(Boolean)
-  ).slice(0, 8) as Array<any>;
+  const locStats = configuredConnections.map(conn => {
+    const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
+    return {
+      ...conn,
+      activeOrders: connOrders.filter(o => o.status !== "completed").length,
+      totalOrders: connOrders.length,
+    };
+  });
 
-  const recentOrders = [...ORDERS].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
+  const recentOrders = [...orders].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
 
   const stats = [
-    { label: "Total SKUs", value: totalSKUs, sub: "Across all locations", cls: "text-[hsl(210,100%,40%)]" },
-    { label: "Total Units on Hand", value: totalQty.toLocaleString(), sub: "All locations combined", cls: "" },
-    { label: "Low / Out of Stock", value: `${lowStockItems.length} SKUs`, sub: `${outOfStockInstances} location instances`, cls: "text-[hsl(38,92%,50%)]" },
-    { label: "Active Orders", value: activeOrders, sub: `${ORDERS.filter(o => o.status === "in_progress").length} in progress`, cls: "text-[hsl(142,76%,36%)]" },
+    { label: "Connected Locations", value: configuredConnections.length, sub: `${(connections || []).length} total configured`, cls: "text-primary" },
+    { label: "Total Orders", value: orders.length, sub: "From all connections", cls: "" },
+    { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "text-[hsl(142,76%,36%)]" },
+    { label: "Pending", value: orders.filter(o => o.status === "pending").length, sub: "Awaiting pick & pack", cls: "text-[hsl(38,92%,50%)]" },
   ];
 
   return (
@@ -60,93 +52,132 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       {/* Location Cards */}
       <div>
         <div className="mb-2.5 font-semibold text-[0.9375rem] flex items-center gap-2">
-          <MapPin size={15} className="text-[hsl(210,100%,40%)]" />
+          <MapPin size={15} className="text-primary" />
           CartonCloud Locations
         </div>
-        <div className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2">
-          {locStats.map(loc => (
-            <Card
-              key={loc.id}
-              className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => onNavigate("inventory", loc.id)}
-            >
-              <div className="p-3.5 text-white" style={{ background: loc.color }}>
-                <div className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded bg-white/20 inline-block mb-1">{loc.code}</div>
-                <div className="font-semibold text-[0.9375rem]">{loc.name}</div>
-                <div className="text-xs opacity-75">{loc.totalSKUs} active SKUs</div>
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8125rem] text-muted-foreground">Units on Hand</span>
-                  <span className="text-[0.9375rem] font-semibold">{loc.totalQty.toLocaleString()}</span>
+        {connectionsLoading ? (
+          <div className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-40 w-full" />
+            ))}
+          </div>
+        ) : configuredConnections.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Cloud size={32} className="mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No connected locations yet. Go to Settings → Connections to set up a CartonCloud connection.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2">
+            {locStats.map(loc => (
+              <Card
+                key={loc.id}
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => onNavigate("orders", loc.code.toLowerCase())}
+              >
+                <div className="p-3.5 text-white" style={{ background: loc.color }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {loc.logo_url ? (
+                      <img src={loc.logo_url} alt={loc.name} className="w-7 h-7 rounded object-contain bg-white/20 p-0.5" />
+                    ) : (
+                      <div className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded bg-white/20 inline-block">{loc.code}</div>
+                    )}
+                  </div>
+                  <div className="font-semibold text-[0.9375rem]">{loc.name}</div>
+                  <div className="text-xs opacity-75">{loc.api_endpoint.replace("https://", "")}</div>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, (loc.totalQty / totalQty) * 100 * 3)}%`, background: loc.color }} />
+                <div className="p-3 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[0.8125rem] text-muted-foreground">Active Orders</span>
+                    <span className="text-[0.9375rem] font-semibold text-primary">{loc.activeOrders}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[0.8125rem] text-muted-foreground">Total Orders</span>
+                    <span className="text-[0.9375rem] font-semibold">{loc.totalOrders}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8125rem] text-muted-foreground">Low Stock SKUs</span>
-                  <span className={`text-[0.9375rem] font-semibold ${loc.lowStock > 0 ? "text-[hsl(38,92%,50%)]" : "text-[hsl(142,76%,36%)]"}`}>{loc.lowStock}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[0.8125rem] text-muted-foreground">Active Orders</span>
-                  <span className="text-[0.9375rem] font-semibold text-[hsl(210,100%,40%)]">{loc.orders}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Lower section */}
       <div className="grid grid-cols-2 gap-4 max-[1100px]:grid-cols-1">
-        {/* Stock Alerts */}
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between p-3.5 border-b border-border">
-            <span className="text-[0.9375rem] font-semibold flex items-center gap-2">
-              <AlertTriangle size={15} className="text-[hsl(38,92%,50%)]" />
-              Stock Alerts
-              <span className="inline-flex items-center justify-center min-w-[1.375rem] h-[1.375rem] px-1.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground">{allLowAlerts.length}</span>
-            </span>
-            <button className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors" onClick={() => onNavigate("inventory", "all")}>View All</button>
-          </div>
-          {allLowAlerts.map((item, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted transition-colors" onClick={() => onNavigate("inventory", item.locId)}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: item.type === "out" ? "hsl(0,84%,60%)" : "hsl(38,92%,50%)" }} />
-                <div>
-                  <div className="text-sm font-medium">{item.name}</div>
-                  <div className="text-xs text-muted-foreground">{item.locName} · {item.unit}</div>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-0.5">
-                <div className={`text-sm font-semibold ${item.type === "out" ? "text-destructive" : "text-[hsl(38,92%,50%)]"}`}>{item.qty === 0 ? "Out" : item.qty.toLocaleString()}</div>
-                <div className="text-[0.7rem] text-muted-foreground">min {item.minQty}</div>
-              </div>
-            </div>
-          ))}
-        </Card>
-
         {/* Recent Orders */}
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between p-3.5 border-b border-border">
             <span className="text-[0.9375rem] font-semibold flex items-center gap-2">
-              <ClipboardCheck size={15} className="text-[hsl(210,100%,40%)]" />
+              <ClipboardCheck size={15} className="text-primary" />
               Recent Orders
             </span>
             <button className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors" onClick={() => onNavigate("orders", "all")}>View All</button>
           </div>
-          {recentOrders.map((order, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted transition-colors">
-              <div className="flex items-center gap-2.5">
-                <LocationChip locationId={order.location} />
-                <div>
-                  <div className="text-sm font-medium">{order.id}</div>
-                  <div className="text-xs text-muted-foreground">{order.customer} · {order.product}</div>
+          {ordersLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : recentOrders.length === 0 ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">No orders loaded yet.</div>
+          ) : (
+            recentOrders.map((order, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted transition-colors">
+                <div className="flex items-center gap-2.5">
+                  <LocationChip locationId={order.location} />
+                  <div>
+                    <div className="text-sm font-medium">{order.id}</div>
+                    <div className="text-xs text-muted-foreground">{order.customer} · {order.product}</div>
+                  </div>
+                </div>
+                <StatusBadge status={order.status} />
+              </div>
+            ))
+          )}
+        </Card>
+
+        {/* Connection Status */}
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between p-3.5 border-b border-border">
+            <span className="text-[0.9375rem] font-semibold flex items-center gap-2">
+              <Cloud size={15} className="text-primary" />
+              Connection Status
+            </span>
+            <button className="text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1 rounded-md transition-colors" onClick={() => onNavigate("settings")}>Manage</button>
+          </div>
+          {(connections || []).map((conn, i) => {
+            const configured = isConnectionConfigured(conn);
+            return (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded flex items-center justify-center overflow-hidden text-white font-bold text-[0.625rem] shrink-0 border"
+                    style={{
+                      background: conn.logo_url ? 'hsl(var(--background))' : conn.color,
+                      borderColor: conn.color,
+                    }}
+                  >
+                    {conn.logo_url ? (
+                      <img src={conn.logo_url} alt={conn.name} className="w-full h-full object-contain" />
+                    ) : (
+                      conn.code
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{conn.name}</div>
+                    <div className="text-xs text-muted-foreground">{conn.code}</div>
+                  </div>
+                </div>
+                <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  configured
+                    ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)]"
+                    : "bg-muted text-muted-foreground"
+                }`}>
+                  {configured ? "Connected" : "Not Configured"}
                 </div>
               </div>
-              <StatusBadge status={order.status} />
-            </div>
-          ))}
+            );
+          })}
         </Card>
       </div>
     </div>
