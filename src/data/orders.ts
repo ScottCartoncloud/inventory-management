@@ -2,6 +2,7 @@ export interface Order {
   id: string;
   numericId: string;
   ref: string;
+  customer: string;
   qty: number;
   location: string;
   status: string;
