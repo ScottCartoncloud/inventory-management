@@ -58,6 +58,13 @@ export type Database = {
           is_active: boolean
           logo_url: string | null
           name: string
+          product_auto_import: boolean
+          product_last_sync_matched: number | null
+          product_last_sync_unmatched_cc: number | null
+          product_last_sync_unmatched_portal: number | null
+          product_last_synced_at: string | null
+          product_match_strategy: string
+          product_sync_mode: string
           tenant_id: string | null
           updated_at: string
         }
@@ -72,6 +79,13 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           name: string
+          product_auto_import?: boolean
+          product_last_sync_matched?: number | null
+          product_last_sync_unmatched_cc?: number | null
+          product_last_sync_unmatched_portal?: number | null
+          product_last_synced_at?: string | null
+          product_match_strategy?: string
+          product_sync_mode?: string
           tenant_id?: string | null
           updated_at?: string
         }
@@ -86,6 +100,13 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           name?: string
+          product_auto_import?: boolean
+          product_last_sync_matched?: number | null
+          product_last_sync_unmatched_cc?: number | null
+          product_last_sync_unmatched_portal?: number | null
+          product_last_synced_at?: string | null
+          product_match_strategy?: string
+          product_sync_mode?: string
           tenant_id?: string | null
           updated_at?: string
         }
@@ -95,6 +116,7 @@ export type Database = {
         Row: {
           cc_product_code: string
           cc_product_id: string | null
+          cc_product_name: string | null
           connection_id: string
           created_at: string
           id: string
@@ -105,6 +127,7 @@ export type Database = {
         Insert: {
           cc_product_code: string
           cc_product_id?: string | null
+          cc_product_name?: string | null
           connection_id: string
           created_at?: string
           id?: string
@@ -115,6 +138,7 @@ export type Database = {
         Update: {
           cc_product_code?: string
           cc_product_id?: string | null
+          cc_product_name?: string | null
           connection_id?: string
           created_at?: string
           id?: string
