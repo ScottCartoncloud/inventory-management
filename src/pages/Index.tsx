@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { DashboardView } from "@/components/views/DashboardView";
 import { InventoryView } from "@/components/views/InventoryView";
 import { OrdersView } from "@/components/views/OrdersView";
+import { PurchaseOrdersView } from "@/components/views/PurchaseOrdersView";
 import { ProductsView } from "@/components/views/ProductsView";
 import { SettingsView } from "@/components/views/SettingsView";
 
