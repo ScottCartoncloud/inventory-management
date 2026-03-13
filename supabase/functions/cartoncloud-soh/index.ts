@@ -47,60 +47,136 @@ Deno.serve(async (req) => {
     const warehouseName = connection.cc_warehouse_name || "Default";
     const refreshStart = new Date().toISOString();
 
-    // Fetch SOH report from CartonCloud
-    let allRows: any[] = [];
-    let page = 1;
-    let totalPages = 1;
+    // Step 1: Create the report run
+    const reportRunUrl = `${connection.api_endpoint}/tenants/${connection.tenant_id}/report-runs`;
 
-    while (page <= totalPages) {
-      const reportUrl = `${connection.api_endpoint}/tenants/${connection.tenant_id}/report-runs${page > 1 ? `?page=${page}` : ""}`;
+    const createResponse = await fetch(reportRunUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Accept-Version": "1",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        type: "STOCK_ON_HAND",
+        parameters: {
+          pageSize: 100,
+          warehouse: { name: warehouseName },
+          customer: { id: connection.cc_customer_id },
+          aggregateBy: ["productType"],
+        },
+      }),
+    });
 
-      const ccResponse = await fetch(reportUrl, {
-        method: "POST",
+    if (!createResponse.ok) {
+      const errText = await createResponse.text();
+      console.error("CC SOH create report error:", createResponse.status, errText);
+      return json(
+        { error: "CartonCloud API error", status: createResponse.status, detail: errText },
+        502
+      );
+    }
+
+    const reportRun = await createResponse.json();
+    const reportRunId = reportRun.id;
+    console.log("CC SOH report created:", JSON.stringify(reportRun));
+
+    if (!reportRunId) {
+      return json({ error: "No report run ID returned from CartonCloud" }, 502);
+    }
+
+    // Step 2: Poll until report is complete
+    const maxPolls = 30;
+    const pollIntervalMs = 2000;
+    let reportStatus = reportRun.status;
+    let completedReport = reportRun;
+
+    for (let i = 0; i < maxPolls && reportStatus === "IN_PROCESS"; i++) {
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+
+      const pollResponse = await fetch(`${reportRunUrl}/${reportRunId}`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Accept-Version": "1",
-          "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          type: "STOCK_ON_HAND",
-          parameters: {
-            pageSize: 100,
-            warehouse: { name: warehouseName },
-            customer: { id: connection.cc_customer_id },
-            aggregateBy: ["productType"],
-          },
-        }),
       });
 
-      if (!ccResponse.ok) {
-        const errText = await ccResponse.text();
-        console.error("CC SOH API error:", ccResponse.status, errText);
+      if (!pollResponse.ok) {
+        const errText = await pollResponse.text();
+        console.error("CC SOH poll error:", pollResponse.status, errText);
         return json(
-          { error: "CartonCloud API error", status: ccResponse.status, detail: errText },
+          { error: "CartonCloud API error during polling", status: pollResponse.status, detail: errText },
           502
         );
       }
 
-      const data = await ccResponse.json();
-
-      // Log raw response on first page for debugging
-      if (page === 1) {
-        console.log("CC SOH raw response:", JSON.stringify(data));
-        console.log("CC SOH response headers - Total-Pages:", ccResponse.headers.get("Total-Pages"),
-          "Page-Number:", ccResponse.headers.get("Page-Number"),
-          "Total-Elements:", ccResponse.headers.get("Total-Elements"));
-      }
-
-      // The response could be an array directly or wrapped in a property
-      const rows = Array.isArray(data) ? data : (data.content || data.results || data.data || []);
-      allRows = allRows.concat(rows);
-
-      const tp = ccResponse.headers.get("Total-Pages");
-      if (tp) totalPages = parseInt(tp, 10);
-      page++;
+      completedReport = await pollResponse.json();
+      reportStatus = completedReport.status;
+      console.log(`CC SOH poll ${i + 1}: status=${reportStatus}`);
     }
+
+    if (reportStatus !== "COMPLETED" && reportStatus !== "COMPLETE") {
+      console.error("CC SOH report did not complete. Final status:", reportStatus);
+      return json(
+        { error: `Report did not complete in time. Status: ${reportStatus}` },
+        504
+      );
+    }
+
+    // Log the completed report for debugging
+    console.log("CC SOH completed report:", JSON.stringify(completedReport));
+
+    // Step 3: Extract result rows from the completed report
+    // The results might be in the report object itself or need a separate fetch
+    let allRows: any[] = [];
+
+    // Try extracting from the completed report object
+    const resultData = completedReport.results || completedReport.data || completedReport.content || completedReport.rows || completedReport.items || [];
+    
+    if (Array.isArray(resultData) && resultData.length > 0) {
+      allRows = resultData;
+    } else {
+      // Results might be paginated at a sub-resource endpoint
+      let page = 1;
+      let totalPages = 1;
+
+      while (page <= totalPages) {
+        const resultsUrl = `${reportRunUrl}/${reportRunId}/results${page > 1 ? `?page=${page}` : ""}`;
+        const resultsResponse = await fetch(resultsUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Accept-Version": "1",
+            Accept: "application/json",
+          },
+        });
+
+        if (!resultsResponse.ok) {
+          // If /results doesn't exist, the data may be directly in the report
+          console.log("CC SOH /results endpoint returned:", resultsResponse.status, "- using completed report data directly");
+          break;
+        }
+
+        const resultsData = await resultsResponse.json();
+        if (page === 1) {
+          console.log("CC SOH results raw response:", JSON.stringify(resultsData));
+          console.log("CC SOH results headers - Total-Pages:", resultsResponse.headers.get("Total-Pages"),
+            "Page-Number:", resultsResponse.headers.get("Page-Number"));
+        }
+
+        const rows = Array.isArray(resultsData) ? resultsData : (resultsData.content || resultsData.results || resultsData.data || resultsData.rows || []);
+        allRows = allRows.concat(rows);
+
+        const tp = resultsResponse.headers.get("Total-Pages");
+        if (tp) totalPages = parseInt(tp, 10);
+        page++;
+      }
+    }
+
+    console.log(`CC SOH total rows extracted: ${allRows.length}`);
 
     // Load product mappings for this connection
     const { data: mappings } = await supabase
