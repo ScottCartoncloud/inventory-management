@@ -157,17 +157,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         </div>
       </div>
 
-      {testResult && (
-        <div className={`flex items-center gap-2 text-sm rounded-md p-3 ${
-          testResult === "success"
-            ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)]"
-            : "bg-destructive/10 text-destructive"
-        }`}>
-          {testResult === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          {testResult === "success" ? "Connection successful!" : "Connection failed. Please check your credentials."}
-        </div>
-      )}
-
       <div className="flex gap-2 pt-2">
         <Button
           variant="outline"
