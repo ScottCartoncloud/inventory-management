@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Upload, X } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Upload, X, Package } from "lucide-react";
 import { useUpsertConnection, useTestConnection, type Connection } from "@/hooks/useConnections";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ProductSyncDialog } from "@/components/ProductSyncDialog";
+import { isConnectionConfigured } from "@/hooks/useConnections";
 
 interface LocationConnectionCardProps {
   connection: Connection;
@@ -37,6 +39,7 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
   const [isEditing, setIsEditing] = useState(!hasCredentials);
   const [showSecret, setShowSecret] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
 
   const [name, setName] = useState(connection.name);
   const [color, setColor] = useState(connection.color);
@@ -69,7 +72,6 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
       const ext = file.name.split(".").pop();
       const filePath = `${connection.id}.${ext}`;
 
-      // Remove old logo if exists
       await supabase.storage.from("connection-logos").remove([filePath]);
 
       const { error: uploadError } = await supabase.storage
@@ -85,7 +87,6 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
       const newUrl = publicData.publicUrl + "?t=" + Date.now();
       setLogoUrl(newUrl);
 
-      // Save immediately
       await upsertMutation.mutateAsync({
         id: connection.id,
         name,
@@ -218,7 +219,6 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span>
 
         <div className="flex items-start gap-4">
-          {/* Logo / Tile Preview */}
           <div className="space-y-2">
             <Label className="text-xs">Logo / Tile</Label>
             <div className="relative group">
@@ -259,7 +259,6 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
             </button>
           </div>
 
-          {/* Name + Color */}
           <div className="flex-1 space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Display Name</Label>
@@ -394,6 +393,28 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
           )}
         </div>
       </div>
+
+      {/* Product Sync Section */}
+      {isConnectionConfigured(connection) && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Product Sync</span>
+            <p className="text-sm text-muted-foreground">
+              Fetch products from this CartonCloud tenant and reconcile against the portal product catalog.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setShowSyncDialog(true)}>
+              <Package size={14} /> Sync Products
+            </Button>
+          </div>
+
+          <ProductSyncDialog
+            open={showSyncDialog}
+            onOpenChange={setShowSyncDialog}
+            connection={connection}
+          />
+        </>
+      )}
     </div>
   );
 }
