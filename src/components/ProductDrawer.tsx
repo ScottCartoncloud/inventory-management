@@ -114,7 +114,6 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: conn.color }} />
                             <span className="font-medium">{conn.name}</span>
-                            <span className="text-xs text-muted-foreground font-mono">{conn.code}</span>
                           </div>
                           <div className="text-right">
                             {!hasData ? (

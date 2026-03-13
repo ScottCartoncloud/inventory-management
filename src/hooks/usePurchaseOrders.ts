@@ -56,7 +56,7 @@ function transformInboundOrder(
     sku: rawItems[0]?.details?.product?.code || "",
     itemCount: rawItems.length,
     qty: totalQty,
-    location: connection.code.toLowerCase(),
+    location: connection.id,
     connectionId: connection.id,
     status: raw.status,
     cartoncloudStatus: raw.status,
@@ -126,7 +126,7 @@ export function usePurchaseOrders(): PurchaseOrdersResult {
         } else {
           const connIndex = results.indexOf(result);
           errors.push({
-            connectionCode: configuredConnections[connIndex]?.code || "Unknown",
+            connectionCode: configuredConnections[connIndex]?.name || "Unknown",
             message: result.reason?.message || "Failed to fetch purchase orders",
           });
         }

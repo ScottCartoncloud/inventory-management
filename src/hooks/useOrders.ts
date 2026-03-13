@@ -92,7 +92,7 @@ function transformOrder(
     ref: ccOrder.references?.customer || "",
     customer: getCustomerName(ccOrder.details),
     qty: totalQty,
-    location: connection.code.toLowerCase(),
+    location: connection.id,
     status: ccOrder.status,
     created: ccOrder.timestamps?.created?.time
       ? new Date(ccOrder.timestamps.created.time).toLocaleDateString()
@@ -161,7 +161,7 @@ export function useOrders(): OrdersResult {
         } else {
           const connIndex = results.indexOf(result);
           errors.push({
-            connectionCode: configuredConnections[connIndex]?.code || "Unknown",
+            connectionCode: configuredConnections[connIndex]?.name || "Unknown",
             message: result.reason?.message || "Failed to fetch orders",
           });
         }

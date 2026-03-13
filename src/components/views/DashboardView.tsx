@@ -23,7 +23,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
   const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
   const pendingInbound = purchaseOrders.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length;
 
-  // SOH stats from live data
   const totalUnits = hasSOHData
     ? sohSummary.reduce((s, p) => s + p.total_qty, 0)
     : 0;
@@ -35,8 +34,8 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     : 0;
 
   const locStats = configuredConnections.map(conn => {
-    const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
-    const connPOs = purchaseOrders.filter(o => o.location === conn.code.toLowerCase());
+    const connOrders = orders.filter(o => o.location === conn.id);
+    const connPOs = purchaseOrders.filter(o => o.location === conn.id);
     const connUnits = hasSOHData
       ? sohSummary.reduce((s, p) => {
           const c = p.connections.find(c => c.connection_id === conn.id);
@@ -97,14 +96,14 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               <Card
                 key={loc.id}
                 className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => onNavigate("orders", loc.code.toLowerCase())}
+                onClick={() => onNavigate("orders", loc.id)}
               >
                 <div className="p-3.5 text-white" style={{ background: loc.color }}>
                   <div className="flex items-center gap-2.5 mb-1">
                     {loc.logo_url ? (
                       <img src={loc.logo_url} alt={loc.name} className="w-9 h-9 rounded-md object-contain bg-white/90 p-1" />
                     ) : (
-                      <div className="w-9 h-9 rounded-md bg-white/20 flex items-center justify-center text-xs font-bold">{loc.code}</div>
+                      <div className="w-9 h-9 rounded-md bg-white/20 flex items-center justify-center text-xs font-bold">{loc.name.substring(0, 2).toUpperCase()}</div>
                     )}
                     <div>
                       <div className="font-semibold text-[0.9375rem] leading-tight">{loc.name}</div>

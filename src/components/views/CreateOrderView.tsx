@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { LOCATIONS } from "@/data/locations";
+import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import { PRODUCTS } from "@/data/products";
 import { getSOH } from "@/data/inventory-utils";
 import { LocationChip } from "@/components/LocationChip";
@@ -25,6 +25,8 @@ const CATEGORIES = ["All Categories", "General"];
 const PAGE_SIZE = 10;
 
 export function CreateOrderView({ onBack }: CreateOrderViewProps) {
+  const { data: connections } = useConnections();
+  const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
   // Order details
   const [selectedLocation, setSelectedLocation] = useState("");
   const [customerRef, setCustomerRef] = useState("");
@@ -168,11 +170,11 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                       <SelectValue placeholder="Select a location…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {LOCATIONS.map(loc => (
+                      {configuredConnections.map(loc => (
                         <SelectItem key={loc.id} value={loc.id}>
                           <span className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: loc.color }} />
-                            {loc.name} ({loc.code})
+                            {loc.name}
                           </span>
                         </SelectItem>
                       ))}

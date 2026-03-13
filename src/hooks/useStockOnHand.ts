@@ -24,7 +24,6 @@ export interface SOHProductSummary {
   connections: {
     connection_id: string;
     connection_name: string;
-    connection_code: string;
     connection_color: string;
     connection_logo_url: string | null;
     total_qty: number;
@@ -55,7 +54,6 @@ export function useSOHSummary() {
   const { data: sohRows, isLoading: sohLoading } = useStockOnHand();
   const { data: connections, isLoading: connLoading } = useConnections();
 
-  // Load products separately to join
   const { data: products, isLoading: prodLoading } = useQuery({
     queryKey: ["products-for-soh"],
     queryFn: async () => {
@@ -76,7 +74,6 @@ export function useSOHSummary() {
     const configuredConns = connections.filter(c => c.is_active && isConnectionConfigured(c));
     const connMap = new Map(configuredConns.map(c => [c.id, c]));
 
-    // Group SOH by product
     const byProduct = new Map<string, StockOnHandRow[]>();
     for (const row of sohRows) {
       const existing = byProduct.get(row.product_id) || [];
@@ -109,7 +106,6 @@ export function useSOHSummary() {
         return {
           connection_id: conn.id,
           connection_name: conn.name,
-          connection_code: conn.code,
           connection_color: conn.color,
           connection_logo_url: conn.logo_url,
           total_qty: totalQty,
@@ -121,7 +117,6 @@ export function useSOHSummary() {
 
       const totalQty = connSummaries.reduce((s, c) => s + c.total_qty, 0);
 
-      // Only include products that have SOH data OR are mapped to connections
       summary.push({
         product_id: product.id,
         product_name: product.name,
@@ -197,7 +192,6 @@ export function useRefreshAllSOH() {
   });
 }
 
-/** Get the SOH freshness status based on oldest refresh time */
 export function getSOHFreshnessStatus(connections: Connection[]): "fresh" | "stale" | "old" | "never" {
   const configured = connections.filter(c => c.is_active && isConnectionConfigured(c));
   if (configured.length === 0) return "never";
