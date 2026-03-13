@@ -39,7 +39,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const canSave = !!(tenantId && clientId && clientSecret);
 
   const handleTestConnection = async () => {
-    setTestResult(null);
     try {
       await testMutation.mutateAsync(connection.id);
       toast({ 
