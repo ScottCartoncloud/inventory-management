@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Tag, DollarSign, Ruler, Pencil, Download, Link2 } from "lucide-react";
+import { Tag, DollarSign, Ruler, Pencil, Download, Link2, PackageOpen } from "lucide-react";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { ProductMappingsTab } from "@/components/ProductMappingsTab";
+import { useStockOnHand } from "@/hooks/useStockOnHand";
+import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import type { DBProduct } from "@/hooks/useProducts";
 
 interface ProductDrawerProps {
@@ -14,6 +16,8 @@ interface ProductDrawerProps {
 
 export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const { data: sohRows } = useStockOnHand();
+  const { data: connections } = useConnections();
 
   if (!product) return null;
 
@@ -25,6 +29,28 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
   const length = product.length ?? 0;
   const width = product.width ?? 0;
   const height = product.height ?? 0;
+
+  // Build per-connection SOH for this product
+  const productSOH = (sohRows || []).filter(r => r.product_id === product.id);
+  const configuredConns = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
+
+  const connSOHData = configuredConns.map(conn => {
+    const rows = productSOH.filter(r => r.connection_id === conn.id);
+    const totalQty = rows.reduce((s, r) => s + r.qty, 0);
+    const availableQty = rows.filter(r => r.product_status === "AVAILABLE").reduce((s, r) => s + r.qty, 0);
+    const nonAvailable = rows.filter(r => r.product_status !== "AVAILABLE" && r.qty > 0);
+
+    return {
+      conn,
+      totalQty,
+      availableQty,
+      nonAvailable,
+      hasData: rows.length > 0,
+    };
+  });
+
+  const totalSOH = connSOHData.reduce((s, c) => s + c.totalQty, 0);
+  const hasAnySOH = connSOHData.some(c => c.hasData);
 
   return (
     <>
@@ -69,13 +95,52 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
                 </FieldGroup>
 
                 <FieldGroup title="Stock on Hand">
-                  <div className="bg-muted rounded-md p-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-[hsl(38,92%,50%)]" />
-                      <span className="font-medium text-foreground">SOH data pending</span>
+                  {!hasAnySOH ? (
+                    <div className="bg-muted rounded-md p-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="w-2 h-2 rounded-full bg-[hsl(38,92%,50%)]" />
+                        <span className="font-medium text-foreground">No SOH data</span>
+                      </div>
+                      Refresh SOH in the Stock on Hand page to see live stock levels.
                     </div>
-                    SOH data will be available when CartonCloud sync is configured and live stock queries are enabled.
-                  </div>
+                  ) : (
+                    <div className="border border-border rounded-md overflow-hidden">
+                      <div className="grid grid-cols-[1fr_auto] items-center px-3.5 py-2 bg-muted text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span>Location</span>
+                        <span>Quantity</span>
+                      </div>
+                      {connSOHData.map(({ conn, totalQty, availableQty, nonAvailable, hasData }) => (
+                        <div key={conn.id} className="grid grid-cols-[1fr_auto] items-center px-3.5 py-2 border-b border-border last:border-b-0 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: conn.color }} />
+                            <span className="font-medium">{conn.name}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{conn.code}</span>
+                          </div>
+                          <div className="text-right">
+                            {!hasData ? (
+                              <span className="text-muted-foreground text-xs">No data</span>
+                            ) : nonAvailable.length > 0 ? (
+                              <div>
+                                <span className="font-semibold">{totalQty.toLocaleString()}</span>
+                                <div className="text-[0.65rem] text-muted-foreground">
+                                  {availableQty.toLocaleString()} Available
+                                  {nonAvailable.map(r => (
+                                    <span key={r.product_status}> · {r.qty.toLocaleString()} {r.product_status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="font-semibold">{totalQty.toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-[1fr_auto] items-center px-3.5 py-2 bg-muted text-sm font-semibold">
+                        <span>Total</span>
+                        <span>{totalSOH.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
                 </FieldGroup>
 
                 <FieldGroup title="Notes">
