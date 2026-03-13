@@ -161,6 +161,32 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         </div>
       </div>
 
+      <div className="pt-4 border-t border-border space-y-4">
+        <div className="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">SOH Report Settings</div>
+
+        <div className="space-y-1.5">
+          <Label>CartonCloud Customer ID</Label>
+          <Input
+            placeholder="e.g. f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+            value={isEditing ? customerId : (customerId ? mask(customerId) : "")}
+            onChange={e => setCustomerId(e.target.value)}
+            disabled={!isEditing}
+          />
+          <p className="text-xs text-muted-foreground">Your organisation's customer UUID within this 3PL tenant. Required for SOH reports.</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Warehouse Name</Label>
+          <Input
+            placeholder="Default"
+            value={isEditing ? warehouseName : warehouseName}
+            onChange={e => setWarehouseName(e.target.value)}
+            disabled={!isEditing}
+          />
+          <p className="text-xs text-muted-foreground">The warehouse these credentials are scoped to. Usually "Default" unless the 3PL has named warehouses.</p>
+        </div>
+      </div>
+
       <div className="flex gap-2 pt-2">
         <Button
           variant="outline"
