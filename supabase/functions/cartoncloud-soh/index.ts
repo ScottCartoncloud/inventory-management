@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
         const tp = resultsResponse.headers.get("Total-Pages");
         if (tp) totalPages = parseInt(tp, 10);
         page++;
+        pagesFetched = page - 1;
       }
     }
 
