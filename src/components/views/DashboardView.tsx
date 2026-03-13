@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { useConnections, isConnectionConfigured, type Connection } from "@/hooks/useConnections";
 import { useOrders } from "@/hooks/useOrders";
+import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
-import { MapPin, AlertTriangle, ClipboardCheck, Cloud } from "lucide-react";
+import { MapPin, AlertTriangle, ClipboardCheck, Cloud, PackageOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardViewProps {
