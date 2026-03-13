@@ -42,7 +42,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
 
   const getQty = (p: SOHProductSummary, loc: string): number => {
     if (loc === "all") return p.total_qty;
-    const conn = p.connections.find(c => c.connection_code.toLowerCase() === loc);
+    const conn = p.connections.find(c => c.connection_id === loc);
     return conn?.total_qty ?? 0;
   };
 
@@ -75,27 +75,25 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
     });
   };
 
-  /** Check if a product has any non-available stock across relevant connections */
   const productHasNonAvailable = (product: SOHProductSummary): boolean => {
     if (activeLocation === "all") {
       return product.connections.some(c => c.has_non_available);
     }
-    const conn = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+    const conn = product.connections.find(c => c.connection_id === activeLocation);
     return conn?.has_non_available ?? false;
   };
 
-  /** Get the breakdown rows to display when expanded */
-  const getExpandedBreakdown = (product: SOHProductSummary): { connection_code: string; connection_color: string; status: string; qty: number; uom: string }[] => {
-    const rows: { connection_code: string; connection_color: string; status: string; qty: number; uom: string }[] = [];
+  const getExpandedBreakdown = (product: SOHProductSummary): { connection_name: string; connection_color: string; status: string; qty: number; uom: string }[] => {
+    const rows: { connection_name: string; connection_color: string; status: string; qty: number; uom: string }[] = [];
     const relevantConns = activeLocation === "all"
       ? product.connections
-      : product.connections.filter(c => c.connection_code.toLowerCase() === activeLocation);
+      : product.connections.filter(c => c.connection_id === activeLocation);
 
     for (const conn of relevantConns) {
       for (const b of conn.status_breakdown) {
         if (b.qty > 0) {
           rows.push({
-            connection_code: conn.connection_code,
+            connection_name: conn.connection_name,
             connection_color: conn.connection_color,
             status: b.status,
             qty: b.qty,
@@ -118,7 +116,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
           description: `${result.totalMatched} products updated across ${successCount} location${successCount !== 1 ? "s" : ""}.`,
         });
       } else {
-        const failedNames = result.failures.map((f: any) => f.connection?.code || "Unknown").join(", ");
+        const failedNames = result.failures.map((f: any) => f.connection?.name || "Unknown").join(", ");
         toast({
           title: "SOH Partially Refreshed",
           description: `${successCount} succeeded. Failed: ${failedNames}`,
@@ -220,7 +218,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
                   <>
                     {configuredConnections.map(conn => (
                       <TableHead key={conn.id} className="text-right" style={{ color: conn.color }}>
-                        {conn.code}
+                        {conn.name}
                       </TableHead>
                     ))}
                     <TableHead className="text-right">Total</TableHead>
@@ -295,7 +293,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
                         <>
                           <TableCell className="text-right">
                             {(() => {
-                              const connData = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+                              const connData = product.connections.find(c => c.connection_id === activeLocation);
                               return <SOHCell qty={qty} minQty={product.product_min_qty} hasWarning={connData?.has_non_available ?? false} />;
                             })()}
                           </TableCell>
@@ -312,7 +310,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
                             {breakdown.map((b, i) => (
                               <div key={i} className="flex items-center gap-2">
                                 {activeLocation === "all" && (
-                                  <span className="font-medium" style={{ color: b.connection_color }}>{b.connection_code}</span>
+                                  <span className="font-medium" style={{ color: b.connection_color }}>{b.connection_name}</span>
                                 )}
                                 <span className={isAvailableStatus(b.status) ? "text-foreground" : "text-[hsl(38,92%,50%)] font-medium"}>
                                   {formatStatus(b.status)}:

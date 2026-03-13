@@ -126,7 +126,7 @@ export function usePurchaseOrders(): PurchaseOrdersResult {
         } else {
           const connIndex = results.indexOf(result);
           errors.push({
-            connectionCode: configuredConnections[connIndex]?.code || "Unknown",
+            connectionCode: configuredConnections[connIndex]?.name || "Unknown",
             message: result.reason?.message || "Failed to fetch purchase orders",
           });
         }
