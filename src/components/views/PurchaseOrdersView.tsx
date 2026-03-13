@@ -5,8 +5,10 @@ import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
 
 interface PurchaseOrdersViewProps {
@@ -17,6 +19,7 @@ interface PurchaseOrdersViewProps {
 export function PurchaseOrdersView({ activeLocation, onLocationChange }: PurchaseOrdersViewProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
 
   const { purchaseOrders, isLoading, errors, isUsingMockData } = usePurchaseOrders();
 
@@ -65,6 +68,10 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
             <span className="text-xs text-muted-foreground">{isUsingMockData ? "Demo" : "Real-time"}</span>
           </div>
         </div>
+        <Button size="sm" onClick={() => toast({ title: "Coming Soon", description: "Create Purchase Order will be available soon." })}>
+          <Plus size={16} className="mr-1.5" />
+          New Purchase Order
+        </Button>
       </div>
 
       <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
