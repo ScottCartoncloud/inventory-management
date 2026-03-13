@@ -56,7 +56,7 @@ function transformInboundOrder(
     sku: rawItems[0]?.details?.product?.code || "",
     itemCount: rawItems.length,
     qty: totalQty,
-    location: connection.code.toLowerCase(),
+    location: connection.id,
     connectionId: connection.id,
     status: raw.status,
     cartoncloudStatus: raw.status,
