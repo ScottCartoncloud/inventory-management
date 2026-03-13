@@ -60,6 +60,7 @@ export type Database = {
           is_active: boolean
           logo_url: string | null
           name: string
+          org_id: string
           product_auto_import: boolean
           product_last_sync_matched: number | null
           product_last_sync_unmatched_cc: number | null
@@ -71,6 +72,7 @@ export type Database = {
           soh_refresh_interval: string | null
           tenant_id: string | null
           updated_at: string
+          webhook_secret: string | null
         }
         Insert: {
           api_endpoint?: string
@@ -85,6 +87,7 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           name: string
+          org_id?: string
           product_auto_import?: boolean
           product_last_sync_matched?: number | null
           product_last_sync_unmatched_cc?: number | null
@@ -96,6 +99,7 @@ export type Database = {
           soh_refresh_interval?: string | null
           tenant_id?: string | null
           updated_at?: string
+          webhook_secret?: string | null
         }
         Update: {
           api_endpoint?: string
@@ -110,6 +114,7 @@ export type Database = {
           is_active?: boolean
           logo_url?: string | null
           name?: string
+          org_id?: string
           product_auto_import?: boolean
           product_last_sync_matched?: number | null
           product_last_sync_unmatched_cc?: number | null
@@ -120,6 +125,39 @@ export type Database = {
           soh_last_refreshed_at?: string | null
           soh_refresh_interval?: string | null
           tenant_id?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -134,6 +172,7 @@ export type Database = {
           id: string
           is_override: boolean
           last_synced_at: string | null
+          org_id: string
           product_id: string
         }
         Insert: {
@@ -145,6 +184,7 @@ export type Database = {
           id?: string
           is_override?: boolean
           last_synced_at?: string | null
+          org_id?: string
           product_id: string
         }
         Update: {
@@ -156,6 +196,7 @@ export type Database = {
           id?: string
           is_override?: boolean
           last_synced_at?: string | null
+          org_id?: string
           product_id?: string
         }
         Relationships: [
@@ -164,6 +205,13 @@ export type Database = {
             columns: ["connection_id"]
             isOneToOne: false
             referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_mappings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -221,6 +269,7 @@ export type Database = {
           min_qty: number
           name: string
           notes: string | null
+          org_id: string
           sell_price: number
           sku: string
           supplier: string | null
@@ -244,6 +293,7 @@ export type Database = {
           min_qty?: number
           name: string
           notes?: string | null
+          org_id?: string
           sell_price?: number
           sku: string
           supplier?: string | null
@@ -267,6 +317,7 @@ export type Database = {
           min_qty?: number
           name?: string
           notes?: string | null
+          org_id?: string
           sell_price?: number
           sku?: string
           supplier?: string | null
@@ -277,7 +328,189 @@ export type Database = {
           weight_unit?: string | null
           width?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_order_items: {
+        Row: {
+          cc_item_id: string
+          cc_numeric_id: string | null
+          cc_product_code: string | null
+          cc_product_id: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          product_id: string | null
+          product_name: string | null
+          quantity: number
+          raw_item: Json | null
+          sale_order_id: string
+          unit_of_measure: string | null
+          uom_name: string | null
+        }
+        Insert: {
+          cc_item_id: string
+          cc_numeric_id?: string | null
+          cc_product_code?: string | null
+          cc_product_id?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity: number
+          raw_item?: Json | null
+          sale_order_id: string
+          unit_of_measure?: string | null
+          uom_name?: string | null
+        }
+        Update: {
+          cc_item_id?: string
+          cc_numeric_id?: string | null
+          cc_product_code?: string | null
+          cc_product_id?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity?: number
+          raw_item?: Json | null
+          sale_order_id?: string
+          unit_of_measure?: string | null
+          uom_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_order_items_sale_order_id_fkey"
+            columns: ["sale_order_id"]
+            isOneToOne: false
+            referencedRelation: "sale_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_orders: {
+        Row: {
+          allow_splitting: boolean | null
+          cc_created_at: string | null
+          cc_dispatched_at: string | null
+          cc_modified_at: string | null
+          cc_numeric_id: string | null
+          cc_order_id: string
+          cc_packed_at: string | null
+          cc_version: number | null
+          collect_address: string | null
+          collect_company: string | null
+          connection_id: string
+          created_at: string
+          customer_name: string | null
+          deliver_address: string | null
+          deliver_company: string | null
+          deliver_method: string | null
+          id: string
+          invoice_amount: number | null
+          invoice_currency: string | null
+          order_number: string | null
+          org_id: string
+          raw_payload: Json | null
+          source: string
+          status: string
+          total_items: number
+          total_qty: number
+          updated_at: string
+          urgent: boolean | null
+        }
+        Insert: {
+          allow_splitting?: boolean | null
+          cc_created_at?: string | null
+          cc_dispatched_at?: string | null
+          cc_modified_at?: string | null
+          cc_numeric_id?: string | null
+          cc_order_id: string
+          cc_packed_at?: string | null
+          cc_version?: number | null
+          collect_address?: string | null
+          collect_company?: string | null
+          connection_id: string
+          created_at?: string
+          customer_name?: string | null
+          deliver_address?: string | null
+          deliver_company?: string | null
+          deliver_method?: string | null
+          id?: string
+          invoice_amount?: number | null
+          invoice_currency?: string | null
+          order_number?: string | null
+          org_id: string
+          raw_payload?: Json | null
+          source?: string
+          status: string
+          total_items?: number
+          total_qty?: number
+          updated_at?: string
+          urgent?: boolean | null
+        }
+        Update: {
+          allow_splitting?: boolean | null
+          cc_created_at?: string | null
+          cc_dispatched_at?: string | null
+          cc_modified_at?: string | null
+          cc_numeric_id?: string | null
+          cc_order_id?: string
+          cc_packed_at?: string | null
+          cc_version?: number | null
+          collect_address?: string | null
+          collect_company?: string | null
+          connection_id?: string
+          created_at?: string
+          customer_name?: string | null
+          deliver_address?: string | null
+          deliver_company?: string | null
+          deliver_method?: string | null
+          id?: string
+          invoice_amount?: number | null
+          invoice_currency?: string | null
+          order_number?: string | null
+          org_id?: string
+          raw_payload?: Json | null
+          source?: string
+          status?: string
+          total_items?: number
+          total_qty?: number
+          updated_at?: string
+          urgent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_orders_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_orders_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_on_hand: {
         Row: {
@@ -285,6 +518,7 @@ export type Database = {
           connection_id: string
           id: string
           last_updated_at: string
+          org_id: string
           product_id: string
           product_status: string
           qty: number
@@ -296,6 +530,7 @@ export type Database = {
           connection_id: string
           id?: string
           last_updated_at?: string
+          org_id?: string
           product_id: string
           product_status?: string
           qty?: number
@@ -307,6 +542,7 @@ export type Database = {
           connection_id?: string
           id?: string
           last_updated_at?: string
+          org_id?: string
           product_id?: string
           product_status?: string
           qty?: number
@@ -322,10 +558,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_on_hand_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_on_hand_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_events: {
+        Row: {
+          cc_order_id: string | null
+          connection_id: string
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          processed: boolean
+          processing_error: string | null
+          received_at: string
+        }
+        Insert: {
+          cc_order_id?: string | null
+          connection_id: string
+          event_type: string
+          id?: string
+          org_id: string
+          payload: Json
+          processed?: boolean
+          processing_error?: string | null
+          received_at?: string
+        }
+        Update: {
+          cc_order_id?: string | null
+          connection_id?: string
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          processed?: boolean
+          processing_error?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_events_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
