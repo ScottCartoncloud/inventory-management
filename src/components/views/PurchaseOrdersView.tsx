@@ -68,6 +68,10 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
             <span className="text-xs text-muted-foreground">{isUsingMockData ? "Demo" : "Real-time"}</span>
           </div>
         </div>
+        <Button size="sm" onClick={() => toast({ title: "Coming Soon", description: "Create Purchase Order will be available soon." })}>
+          <Plus size={16} className="mr-1.5" />
+          New Purchase Order
+        </Button>
       </div>
 
       <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
