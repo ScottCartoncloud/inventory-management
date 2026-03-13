@@ -23,10 +23,12 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
   const locStats = configuredConnections.map(conn => {
     const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
+    const connPOs = purchaseOrders.filter(o => o.location === conn.code.toLowerCase());
     return {
       ...conn,
       activeOrders: connOrders.filter(o => o.status !== "completed").length,
       totalOrders: connOrders.length,
+      pendingInbound: connPOs.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length,
     };
   });
 
