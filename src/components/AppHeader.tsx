@@ -1,4 +1,4 @@
-import { Home, Package, ClipboardCheck, Briefcase, Settings, ChevronDown, LogOut, Boxes } from "lucide-react";
+import { Home, Package, ClipboardCheck, PackageOpen, Briefcase, Settings, ChevronDown, LogOut, Boxes } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
