@@ -93,7 +93,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
       setClientId("");
       setClientSecret("");
       setIsEditing(true);
-      setTestResult(null);
       toast({ title: "Disconnected", description: `${connection.code} credentials removed.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
