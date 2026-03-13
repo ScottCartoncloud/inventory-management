@@ -11,6 +11,7 @@ export interface Connection {
   client_id: string | null;
   client_secret: string | null;
   is_active: boolean;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +45,7 @@ export function useUpsertConnection() {
             tenant_id: conn.tenant_id,
             client_id: conn.client_id,
             client_secret: conn.client_secret,
+            logo_url: conn.logo_url,
             is_active: conn.is_active,
           })
           .eq("id", conn.id)
@@ -63,6 +65,7 @@ export function useUpsertConnection() {
             client_id: conn.client_id,
             client_secret: conn.client_secret,
             is_active: conn.is_active,
+            logo_url: conn.logo_url,
           })
           .select()
           .single();

@@ -56,6 +56,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          logo_url: string | null
           name: string
           tenant_id: string | null
           updated_at: string
@@ -69,6 +70,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           name: string
           tenant_id?: string | null
           updated_at?: string
@@ -82,6 +84,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           name?: string
           tenant_id?: string | null
           updated_at?: string
