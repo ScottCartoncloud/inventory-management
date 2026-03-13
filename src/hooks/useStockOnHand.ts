@@ -97,9 +97,9 @@ export function useSOHSummary() {
         const connRows = connGroups.get(conn.id) || [];
         const totalQty = connRows.reduce((s, r) => s + r.qty, 0);
         const availableQty = connRows
-          .filter(r => r.product_status === "AVAILABLE")
+          .filter(r => r.product_status === "AVAILABLE" || r.product_status === "OK")
           .reduce((s, r) => s + r.qty, 0);
-        const hasNonAvailable = connRows.some(r => r.product_status !== "AVAILABLE" && r.qty > 0);
+        const hasNonAvailable = connRows.some(r => r.product_status !== "AVAILABLE" && r.product_status !== "OK" && r.qty > 0);
 
         const statusMap = new Map<string, number>();
         for (const r of connRows) {
