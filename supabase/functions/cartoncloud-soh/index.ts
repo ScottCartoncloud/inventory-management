@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     // Step 3: Extract result rows from the completed report
     // The results might be in the report object itself or need a separate fetch
     let allRows: any[] = [];
-
+    let pagesFetched = 0;
     // Try extracting from the completed report object
     const resultData = completedReport.results || completedReport.data || completedReport.content || completedReport.rows || completedReport.items || [];
     
