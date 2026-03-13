@@ -3,20 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useConnections, isConnectionConfigured, type Connection } from "./useConnections";
 import { ORDERS, type Order } from "@/data/orders";
 
-// CartonCloud status → our status mapping
-const STATUS_MAP: Record<string, string> = {
-  DRAFT: "pending",
-  AWAITING_PICK_PACK: "pending",
-  PACKING_IN_PROGRESS: "in_progress",
-  PACKED: "in_progress",
-  DISPATCHED: "completed",
-  REJECTED: "on_hold",
-};
-
-function mapStatus(ccStatus: string): string {
-  return STATUS_MAP[ccStatus] || "pending";
-}
-
 interface CartonCloudAddress {
   street1?: string;
   street2?: string;
@@ -25,6 +11,8 @@ interface CartonCloudAddress {
   state?: string;
   postcode?: string;
   country?: string;
+  name?: string;
+  contactName?: string;
 }
 
 interface CartonCloudOrder {
@@ -38,6 +26,7 @@ interface CartonCloudOrder {
     deliver?: {
       address?: CartonCloudAddress;
       requiredDate?: string;
+      name?: string;
     };
     collect?: {
       requiredDate?: string;
@@ -57,16 +46,28 @@ interface CartonCloudOrder {
   version?: number;
 }
 
-function formatAddress(addr?: CartonCloudAddress): string {
-  if (!addr) return "";
+function safeString(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "object") return "";
+  return String(val);
+}
+
+function formatAddress(deliver?: CartonCloudOrder["details"]): string {
+  if (!deliver?.deliver) return "";
+  const addr = deliver.deliver.address;
+  const deliverName = safeString(deliver.deliver.name) || safeString(addr?.name) || safeString(addr?.contactName);
+  
   const parts = [
-    addr.street1,
-    addr.street2,
-    addr.suburb || addr.city,
-    addr.state,
-    addr.postcode,
+    safeString(addr?.street1),
+    safeString(addr?.street2),
+    safeString(addr?.suburb) || safeString(addr?.city),
+    safeString(addr?.state),
+    safeString(addr?.postcode),
   ].filter(Boolean);
-  return parts.join(", ");
+  
+  const addressLine = parts.join(", ");
+  if (deliverName && addressLine) return `${deliverName}, ${addressLine}`;
+  return deliverName || addressLine;
 }
 
 function transformOrder(
@@ -75,26 +76,20 @@ function transformOrder(
 ): Order {
   const items = ccOrder.items || [];
   const totalQty = items.reduce((sum, item) => sum + (item.measures?.quantity || 0), 0);
-
   const numericId = ccOrder.references?.numericId || "";
 
   return {
     id: numericId ? `ORD-${numericId}` : ccOrder.id.substring(0, 8),
     numericId,
     ref: ccOrder.references?.customer || "",
-    customer: ccOrder.customer?.name || "Unknown",
     qty: totalQty,
     location: connection.code.toLowerCase(),
-    status: mapStatus(ccOrder.status),
+    status: ccOrder.status,
     created: ccOrder.timestamps?.created?.time
       ? new Date(ccOrder.timestamps.created.time).toLocaleDateString()
       : "",
-    eta: ccOrder.details?.deliver?.requiredDate
-      || ccOrder.details?.collect?.requiredDate
-      || ccOrder.details?.deliveryDate
-      || "",
     consignment: "",
-    deliveryAddress: formatAddress(ccOrder.details?.deliver?.address),
+    deliveryAddress: formatAddress(ccOrder.details),
   };
 }
 

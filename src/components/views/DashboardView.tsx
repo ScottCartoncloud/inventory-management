@@ -128,8 +128,8 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 <div className="flex items-center gap-2.5">
                   <LocationChip locationId={order.location} />
                   <div>
-                    <div className="text-sm font-medium">{order.id}</div>
-                    <div className="text-xs text-muted-foreground">{order.customer}</div>
+                    <div className="text-sm font-medium">{order.ref || order.id}</div>
+                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">{order.deliveryAddress || order.id}</div>
                   </div>
                 </div>
                 <StatusBadge status={order.status} />
