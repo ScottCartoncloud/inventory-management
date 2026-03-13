@@ -95,19 +95,22 @@ export function SettingsView() {
 function ConnectionSummaryRow({ connection, onManage }: { connection: Connection; onManage: () => void }) {
   const configured = isConnectionConfigured(connection);
   const testMutation = useTestConnection();
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   const handleTest = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!configured) return;
-    setTestResult(null);
     try {
       await testMutation.mutateAsync(connection.id);
-      setTestResult("success");
-      setTimeout(() => setTestResult(null), 3000);
+      toast({ 
+        title: "✓ Connection Successful", 
+        description: `Successfully connected to ${connection.name}.`,
+      });
     } catch {
-      setTestResult("error");
-      setTimeout(() => setTestResult(null), 5000);
+      toast({ 
+        title: "✗ Connection Failed", 
+        description: "Unable to connect. Please check your credentials and try again.",
+        variant: "destructive",
+      });
     }
   };
 
