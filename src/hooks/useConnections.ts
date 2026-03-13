@@ -58,7 +58,9 @@ export function useUpsertConnection() {
             client_secret: conn.client_secret,
             logo_url: conn.logo_url,
             is_active: conn.is_active,
-          })
+            cc_customer_id: conn.cc_customer_id,
+            cc_warehouse_name: conn.cc_warehouse_name,
+          } as any)
           .eq("id", conn.id)
           .select()
           .single();
