@@ -14,7 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connection_tokens: {
+        Row: {
+          access_token: string
+          connection_id: string
+          created_at: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          access_token: string
+          connection_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          access_token?: string
+          connection_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connection_tokens_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      connections: {
+        Row: {
+          api_endpoint: string
+          client_id: string | null
+          client_secret: string | null
+          code: string
+          color: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string
+          client_id?: string | null
+          client_secret?: string | null
+          code: string
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string
+          client_id?: string | null
+          client_secret?: string | null
+          code?: string
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
