@@ -39,7 +39,31 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
 
   const mask = (val: string) => val ? "••••••••" : "";
   const canSave = !!(tenantId && clientId && clientSecret);
+  const sohSettingsChanged =
+    customerId !== (connection.cc_customer_id || "") ||
+    warehouseName !== (connection.cc_warehouse_name || "Default");
 
+  const handleSaveSOHSettings = async () => {
+    try {
+      await upsertMutation.mutateAsync({
+        id: connection.id,
+        name: connection.name,
+        code: connection.code,
+        color: connection.color,
+        api_endpoint: connection.api_endpoint,
+        tenant_id: connection.tenant_id,
+        client_id: connection.client_id,
+        client_secret: connection.client_secret,
+        is_active: connection.is_active,
+        logo_url: connection.logo_url,
+        cc_customer_id: customerId || null,
+        cc_warehouse_name: warehouseName || "Default",
+      });
+      toast({ title: "Saved", description: "SOH settings updated." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
   const handleTestConnection = async () => {
     try {
       await testMutation.mutateAsync(connection.id);
@@ -168,9 +192,8 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
           <Label>CartonCloud Customer ID</Label>
           <Input
             placeholder="e.g. f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
-            value={isEditing ? customerId : (customerId ? mask(customerId) : "")}
+            value={customerId}
             onChange={e => setCustomerId(e.target.value)}
-            disabled={!isEditing}
           />
           <p className="text-xs text-muted-foreground">Your organisation's customer UUID within this 3PL tenant. Required for SOH reports.</p>
         </div>
@@ -179,12 +202,18 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
           <Label>Warehouse Name</Label>
           <Input
             placeholder="Default"
-            value={isEditing ? warehouseName : warehouseName}
+            value={warehouseName}
             onChange={e => setWarehouseName(e.target.value)}
-            disabled={!isEditing}
           />
           <p className="text-xs text-muted-foreground">The warehouse these credentials are scoped to. Usually "Default" unless the 3PL has named warehouses.</p>
         </div>
+
+        {sohSettingsChanged && (
+          <Button size="sm" onClick={handleSaveSOHSettings} disabled={upsertMutation.isPending}>
+            {upsertMutation.isPending && <Loader2 size={14} className="animate-spin" />}
+            Save SOH Settings
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-2 pt-2">
