@@ -104,8 +104,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
           <Table>
             <TableHeader>
               <TableRow className="bg-muted">
-                <TableHead>Reference</TableHead>
-                <TableHead>CartonCloud ID</TableHead>
+                <TableHead>Reference / ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Delivery Address</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
@@ -123,8 +122,10 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                 </TableCell></TableRow>
               ) : filtered.map(order => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.ref || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground text-[0.8125rem]">{order.id}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{order.ref || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{order.id}</div>
+                  </TableCell>
                   <TableCell>{order.customer || "—"}</TableCell>
                   <TableCell className="text-[0.8125rem] max-w-[300px] truncate" title={order.deliveryAddress}>{order.deliveryAddress || "—"}</TableCell>
                   <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>

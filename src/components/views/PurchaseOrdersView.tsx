@@ -121,9 +121,8 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
           <Table>
             <TableHeader>
               <TableRow className="bg-muted">
-                <TableHead>PO / Reference</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Product(s)</TableHead>
+                <TableHead>Reference / ID</TableHead>
+                <TableHead>Products</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Arrival Date</TableHead>
@@ -133,7 +132,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                   <div className="text-4xl mb-3 opacity-30">📦</div>
                   <div className="font-semibold mb-1">No purchase orders found</div>
                   <div className="text-sm">Try adjusting your filters</div>
@@ -141,22 +140,11 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
               ) : filtered.map(order => (
                 <TableRow key={order.id}>
                   <TableCell>
-                    <div className="font-medium">{order.numericId ? `PO-${order.numericId}` : order.id.substring(0, 8)}</div>
-                    {order.ref && <div className="text-xs text-muted-foreground">{order.ref}</div>}
+                    <div className="font-medium">{order.ref || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{order.numericId ? `PO-${order.numericId}` : order.id.substring(0, 8)}</div>
                   </TableCell>
-                  <TableCell>{order.customer || "—"}</TableCell>
                   <TableCell>
-                    <div className="text-[0.8125rem]">
-                      {order.product ? (
-                        <>
-                          <span>{order.product}</span>
-                          {order.sku && <span className="text-muted-foreground ml-1">({order.sku})</span>}
-                        </>
-                      ) : "—"}
-                    </div>
-                    {order.itemCount > 1 && (
-                      <div className="text-xs text-muted-foreground">+{order.itemCount - 1} more</div>
-                    )}
+                    <span className="text-[0.8125rem]">{order.itemCount} {order.itemCount === 1 ? "product" : "products"}</span>
                   </TableCell>
                   <TableCell><LocationChip locationId={order.location} /></TableCell>
                   <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
