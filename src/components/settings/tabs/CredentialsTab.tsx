@@ -43,9 +43,16 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
     setTestResult(null);
     try {
       await testMutation.mutateAsync(connection.id);
-      setTestResult("success");
+      toast({ 
+        title: "✓ Connection Successful", 
+        description: `Successfully connected to ${connection.name}.`,
+      });
     } catch {
-      setTestResult("error");
+      toast({ 
+        title: "✗ Connection Failed", 
+        description: "Unable to connect. Please check your credentials and try again.",
+        variant: "destructive",
+      });
     }
   };
 
