@@ -47,9 +47,9 @@ export function ProductMappingsTab({ product }: ProductMappingsTabProps) {
       {configuredConnections.map(conn => {
         const mapping = getMappingForConnection(conn.id);
         const mappedCode = mapping?.cc_product_code || product.sku;
-        const status: "auto" | "override" | "not-found" = mapping
-          ? (mapping.is_override ? "override" : "auto")
-          : "auto";
+        const status = mapping
+          ? (mapping.is_override ? "override" as const : "auto" as const)
+          : ("not-found" as const);
 
         return (
           <div key={conn.id} className="flex items-center justify-between px-3.5 py-3 border border-border rounded-md">
