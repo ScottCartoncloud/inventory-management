@@ -126,10 +126,9 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                   <TableHead>Order ID</TableHead>
                   <TableHead>PO Ref</TableHead>
                   <TableHead>Customer</TableHead>
-                  <TableHead>Product / SKU</TableHead>
+                  <TableHead>Delivery Address</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead>Consignment</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>ETA</TableHead>
                   <TableHead>Status</TableHead>
@@ -137,7 +136,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     <div className="text-4xl mb-3 opacity-30">📋</div>
                     <div className="font-semibold mb-1">No orders found</div>
                     <div className="text-sm">Try adjusting your filters</div>
@@ -147,15 +146,9 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                     <TableCell className="font-medium">{order.id}</TableCell>
                     <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ref}</TableCell>
                     <TableCell>{order.customer}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">{order.product}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{order.sku}</span>
-                      </div>
-                    </TableCell>
+                    <TableCell className="text-[0.8125rem] max-w-[250px] truncate" title={order.deliveryAddress}>{order.deliveryAddress || "—"}</TableCell>
                     <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
                     <TableCell><LocationChip locationId={order.location} /></TableCell>
-                    <TableCell>{order.consignment ? <a href="#" className="text-[hsl(210,100%,40%)] font-medium hover:underline">{order.consignment}</a> : "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-[0.8125rem]">{order.created || "—"}</TableCell>
                     <TableCell className="text-[0.8125rem]">{order.eta || "—"}</TableCell>
                     <TableCell><StatusBadge status={order.status} /></TableCell>

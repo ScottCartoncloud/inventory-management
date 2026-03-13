@@ -17,12 +17,32 @@ function mapStatus(ccStatus: string): string {
   return STATUS_MAP[ccStatus] || "pending";
 }
 
+interface CartonCloudAddress {
+  street1?: string;
+  street2?: string;
+  city?: string;
+  suburb?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+}
+
 interface CartonCloudOrder {
   id: string;
   status: string;
   references?: { customer?: string; numericId?: string };
   customer?: { name?: string; id?: string };
-  details?: { deliveryDate?: string; instructions?: string };
+  details?: {
+    deliveryDate?: string;
+    instructions?: string;
+    deliver?: {
+      address?: CartonCloudAddress;
+      requiredDate?: string;
+    };
+    collect?: {
+      requiredDate?: string;
+    };
+  };
   items?: Array<{
     details?: {
       product?: { name?: string; code?: string };
@@ -30,8 +50,23 @@ interface CartonCloudOrder {
     };
     measures?: { quantity?: number };
   }>;
+  timestamps?: {
+    created?: { time?: string };
+  };
   properties?: Record<string, string>;
   version?: number;
+}
+
+function formatAddress(addr?: CartonCloudAddress): string {
+  if (!addr) return "";
+  const parts = [
+    addr.street1,
+    addr.street2,
+    addr.suburb || addr.city,
+    addr.state,
+    addr.postcode,
+  ].filter(Boolean);
+  return parts.join(", ");
 }
 
 function transformOrder(
@@ -39,23 +74,27 @@ function transformOrder(
   connection: Connection
 ): Order {
   const items = ccOrder.items || [];
-  const primaryItem = items[0];
   const totalQty = items.reduce((sum, item) => sum + (item.measures?.quantity || 0), 0);
 
+  const numericId = ccOrder.references?.numericId || "";
+
   return {
-    id: ccOrder.references?.numericId
-      ? `ORD-${ccOrder.references.numericId}`
-      : ccOrder.id.substring(0, 8),
+    id: numericId ? `ORD-${numericId}` : ccOrder.id.substring(0, 8),
+    numericId,
     ref: ccOrder.references?.customer || "",
     customer: ccOrder.customer?.name || "Unknown",
-    sku: primaryItem?.details?.product?.code || "",
-    product: primaryItem?.details?.product?.name || "",
     qty: totalQty,
     location: connection.code.toLowerCase(),
     status: mapStatus(ccOrder.status),
-    created: "", // not in search response
-    eta: ccOrder.details?.deliveryDate || "",
+    created: ccOrder.timestamps?.created?.time
+      ? new Date(ccOrder.timestamps.created.time).toLocaleDateString()
+      : "",
+    eta: ccOrder.details?.deliver?.requiredDate
+      || ccOrder.details?.collect?.requiredDate
+      || ccOrder.details?.deliveryDate
+      || "",
     consignment: "",
+    deliveryAddress: formatAddress(ccOrder.details?.deliver?.address),
   };
 }
 
@@ -90,13 +129,17 @@ export function useOrders(): OrdersResult {
                 connectionId: conn.id,
                 method: "POST",
                 path: "outbound-orders/search",
-                body: { condition: {} }, // empty condition = all orders
+                body: {
+                  condition: {
+                    type: "AndCondition",
+                    conditions: [],
+                  },
+                },
               },
             }
           );
           if (error) throw error;
           if (data?.error) throw new Error(data.error);
-          // Response is an array of orders
           const orders = Array.isArray(data) ? data : [];
           return {
             connection: conn,
@@ -127,7 +170,6 @@ export function useOrders(): OrdersResult {
     refetchInterval: 60_000,
   });
 
-  // Fallback to mock data if no connections configured
   if (!hasConfigured && !connectionsLoading) {
     return {
       orders: ORDERS,

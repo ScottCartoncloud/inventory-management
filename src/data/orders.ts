@@ -1,15 +1,15 @@
 export interface Order {
   id: string;
+  numericId: string;
   ref: string;
   customer: string;
-  sku: string;
-  product: string;
   qty: number;
   location: string;
   status: string;
   created: string;
   eta: string;
   consignment: string;
+  deliveryAddress: string;
 }
 
 export const ORDERS: Order[] = [];
