@@ -69,7 +69,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         logo_url: connection.logo_url,
       });
       setIsEditing(false);
-      setTestResult(null);
       toast({ title: "Saved", description: `Connection for ${connection.code} updated.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
