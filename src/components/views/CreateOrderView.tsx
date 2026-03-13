@@ -7,14 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LOCATIONS } from "@/data/locations";
 import { PRODUCTS } from "@/data/products";
 import { getSOH } from "@/data/inventory-utils";
 import { LocationChip } from "@/components/LocationChip";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, ChevronDown, FileUp, Plus, Search, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 
 interface CreateOrderViewProps {
