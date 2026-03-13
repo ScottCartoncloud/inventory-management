@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
     
     if (Array.isArray(resultData) && resultData.length > 0) {
       allRows = resultData;
-    } else {
+      pagesFetched = 1;
       // Results might be paginated at a sub-resource endpoint
       let page = 1;
       let totalPages = 1;
