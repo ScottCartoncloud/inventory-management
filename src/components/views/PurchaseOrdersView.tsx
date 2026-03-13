@@ -18,7 +18,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
 
   const filtered = useMemo(() => PURCHASE_ORDERS.filter(o => {
     const matchLoc = activeLocation === "all" || o.location === activeLocation;
-    const matchSearch = !search || [o.id, o.ref, o.customer, o.deliveryAddress].some(v => v.toLowerCase().includes(search.toLowerCase()));
+    const matchSearch = !search || [o.id, o.ref].some(v => v.toLowerCase().includes(search.toLowerCase()));
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [search, statusFilter, activeLocation]);
 
