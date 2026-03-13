@@ -212,8 +212,9 @@ Deno.serve(async (req) => {
     const upsertRows: any[] = [];
 
     for (const row of allRows) {
-      // Try to extract product code from various possible field paths
+      // Extract product code from CC response
       const productCode =
+        row.details?.product?.references?.code ||
         row.productType?.code ||
         row.product?.code ||
         row.productCode ||
@@ -236,18 +237,17 @@ Deno.serve(async (req) => {
 
       // Extract quantity
       const qty =
-        row.quantity ?? row.qty ?? row.amount ?? row.totalQuantity ?? 0;
+        row.measures?.quantity ?? row.quantity ?? row.qty ?? 0;
 
       // Extract status
       const productStatus =
-        row.productStatus || row.status || "AVAILABLE";
+        row.properties?.productStatus || row.productStatus || row.status || "OK";
 
       // Extract UOM
       const unitOfMeasure =
-        row.unitOfMeasure?.name ||
+        row.details?.unitOfMeasure?.type ||
+        row.properties?.unitOfMeasure?.type ||
         row.unitOfMeasure?.type ||
-        row.unitOfMeasure ||
-        (typeof row.uom === "string" ? row.uom : null) ||
         null;
 
       upsertRows.push({
