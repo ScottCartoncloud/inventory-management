@@ -14,10 +14,12 @@ interface DashboardViewProps {
 export function DashboardView({ onNavigate }: DashboardViewProps) {
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { orders, isLoading: ordersLoading } = useOrders();
+  const { purchaseOrders, isLoading: poLoading } = usePurchaseOrders();
 
   const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
   const activeOrders = orders.filter(o => o.status !== "completed").length;
   const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
+  const pendingInbound = purchaseOrders.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length;
 
   const locStats = configuredConnections.map(conn => {
     const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
