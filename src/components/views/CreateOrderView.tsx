@@ -25,6 +25,8 @@ const CATEGORIES = ["All Categories", "General"];
 const PAGE_SIZE = 10;
 
 export function CreateOrderView({ onBack }: CreateOrderViewProps) {
+  const { data: connections } = useConnections();
+  const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
   // Order details
   const [selectedLocation, setSelectedLocation] = useState("");
   const [customerRef, setCustomerRef] = useState("");
