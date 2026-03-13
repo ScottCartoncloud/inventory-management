@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { LOCATIONS } from "@/data/locations";
+import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import { PRODUCTS } from "@/data/products";
 import { getSOH } from "@/data/inventory-utils";
 import { LocationChip } from "@/components/LocationChip";
