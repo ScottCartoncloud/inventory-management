@@ -129,7 +129,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   <LocationChip locationId={order.location} />
                   <div>
                     <div className="text-sm font-medium">{order.id}</div>
-                    <div className="text-xs text-muted-foreground">{order.customer} · {order.product}</div>
+                    <div className="text-xs text-muted-foreground">{order.customer}</div>
                   </div>
                 </div>
                 <StatusBadge status={order.status} />
