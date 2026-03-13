@@ -134,7 +134,6 @@ function ConnectionSummaryRow({ connection, onManage }: { connection: Connection
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm">{connection.name}</span>
-          <span className="text-xs text-muted-foreground font-mono">{connection.code}</span>
         </div>
         <div className="text-xs text-muted-foreground">
           {connection.api_endpoint.replace("https://", "")}

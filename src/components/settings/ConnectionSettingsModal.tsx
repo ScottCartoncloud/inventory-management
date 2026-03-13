@@ -39,7 +39,6 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
             <div>
               <DialogTitle className="text-base font-bold">{connection.name}</DialogTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground font-mono">{connection.code}</span>
                 <Badge
                   variant="outline"
                   className={configured
