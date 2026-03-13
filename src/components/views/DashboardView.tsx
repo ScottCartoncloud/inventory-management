@@ -38,7 +38,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     { label: "Connected Locations", value: configuredConnections.length, sub: `${(connections || []).length} total configured`, cls: "text-primary" },
     { label: "Total Orders", value: orders.length, sub: "From all connections", cls: "" },
     { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "text-[hsl(142,76%,36%)]" },
-    { label: "Pending", value: orders.filter(o => o.status === "pending").length, sub: "Awaiting pick & pack", cls: "text-[hsl(38,92%,50%)]" },
+    { label: "Pending Inbound", value: pendingInbound, sub: `${purchaseOrders.length} total POs`, cls: "text-[hsl(38,92%,50%)]" },
   ];
 
   return (
