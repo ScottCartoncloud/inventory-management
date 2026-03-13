@@ -101,6 +101,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                     <span className="text-[0.8125rem] text-muted-foreground">Total Orders</span>
                     <span className="text-[0.9375rem] font-semibold">{loc.totalOrders}</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[0.8125rem] text-muted-foreground">Pending Inbound</span>
+                    <span className="text-[0.9375rem] font-semibold text-[hsl(38,92%,50%)]">{loc.pendingInbound}</span>
+                  </div>
                 </div>
               </Card>
             ))}
