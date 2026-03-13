@@ -18,7 +18,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
 
   const filtered = useMemo(() => PURCHASE_ORDERS.filter(o => {
     const matchLoc = activeLocation === "all" || o.location === activeLocation;
-    const matchSearch = !search || [o.id, o.ref, o.customer, o.deliveryAddress].some(v => v.toLowerCase().includes(search.toLowerCase()));
+    const matchSearch = !search || [o.id, o.ref].some(v => v.toLowerCase().includes(search.toLowerCase()));
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [search, statusFilter, activeLocation]);
 
@@ -48,8 +48,6 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
           <TableRow className="bg-muted">
             <TableHead>Reference</TableHead>
             <TableHead>PO ID</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Delivery Address</TableHead>
             <TableHead className="text-right">Qty</TableHead>
             <TableHead>Destination</TableHead>
             <TableHead>Ordered</TableHead>
@@ -59,7 +57,7 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
-            <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+            <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
               <div className="text-4xl mb-3 opacity-30">📦</div>
               <div className="font-semibold mb-1">No purchase orders found</div>
               <div className="text-sm">Try adjusting your filters</div>
@@ -68,8 +66,6 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
             <TableRow key={order.id}>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ref}</TableCell>
               <TableCell className="font-medium">{order.id}</TableCell>
-              <TableCell>{order.customer}</TableCell>
-              <TableCell className="text-muted-foreground text-[0.8125rem] max-w-[260px] truncate">{order.deliveryAddress}</TableCell>
               <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
               <TableCell><LocationChip locationId={order.location} /></TableCell>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ordered}</TableCell>
