@@ -153,22 +153,20 @@ export function LocationConnectionCard({ connection }: LocationConnectionCardPro
       )}
 
       <div className="flex gap-2 pt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTestConnection}
+          disabled={testMutation.isPending || (!isEditing && !hasCredentials) || (isEditing && !canSave)}
+        >
+          {testMutation.isPending && <Loader2 size={14} className="animate-spin" />}
+          Test Connection
+        </Button>
         {isEditing ? (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTestConnection}
-              disabled={testMutation.isPending || !canSave}
-            >
-              {testMutation.isPending && <Loader2 size={14} className="animate-spin" />}
-              Test Connection
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={!canSave || upsertMutation.isPending}>
-              {upsertMutation.isPending && <Loader2 size={14} className="animate-spin mr-1" />}
-              {hasCredentials ? "Update Credentials" : "Save & Connect"}
-            </Button>
-          </>
+          <Button size="sm" onClick={handleSave} disabled={!canSave || upsertMutation.isPending}>
+            {upsertMutation.isPending && <Loader2 size={14} className="animate-spin mr-1" />}
+            {hasCredentials ? "Update Credentials" : "Save & Connect"}
+          </Button>
         ) : (
           <>
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Update Credentials</Button>
