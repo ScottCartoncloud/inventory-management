@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
         total_rows_from_cc: allRows.length,
         matched_to_portal: matched,
         unmatched,
-        pages_fetched: page - 1,
+        pages_fetched: pagesFetched,
       },
       refreshed_at: refreshStart,
     });
