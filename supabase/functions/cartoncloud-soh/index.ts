@@ -139,13 +139,13 @@ Deno.serve(async (req) => {
     // Step 3: Extract result rows from the completed report
     // The results might be in the report object itself or need a separate fetch
     let allRows: any[] = [];
-
+    let pagesFetched = 0;
     // Try extracting from the completed report object
     const resultData = completedReport.results || completedReport.data || completedReport.content || completedReport.rows || completedReport.items || [];
     
     if (Array.isArray(resultData) && resultData.length > 0) {
       allRows = resultData;
-    } else {
+      pagesFetched = 1;
       // Results might be paginated at a sub-resource endpoint
       let page = 1;
       let totalPages = 1;
@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
         const tp = resultsResponse.headers.get("Total-Pages");
         if (tp) totalPages = parseInt(tp, 10);
         page++;
+        pagesFetched = page - 1;
       }
     }
 
@@ -289,7 +290,7 @@ Deno.serve(async (req) => {
         total_rows_from_cc: allRows.length,
         matched_to_portal: matched,
         unmatched,
-        pages_fetched: page - 1,
+        pages_fetched: pagesFetched,
       },
       refreshed_at: refreshStart,
     });
