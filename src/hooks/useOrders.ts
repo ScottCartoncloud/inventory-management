@@ -90,7 +90,7 @@ export function useOrders(): OrdersResult {
                 connectionId: conn.id,
                 method: "POST",
                 path: "outbound-orders/search",
-                body: {}, // empty search = all orders
+                body: { condition: {} }, // empty condition = all orders
               },
             }
           );
