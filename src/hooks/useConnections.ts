@@ -45,6 +45,7 @@ export function useUpsertConnection() {
             tenant_id: conn.tenant_id,
             client_id: conn.client_id,
             client_secret: conn.client_secret,
+            logo_url: conn.logo_url,
             is_active: conn.is_active,
           })
           .eq("id", conn.id)
