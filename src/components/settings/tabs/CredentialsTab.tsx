@@ -39,7 +39,31 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
 
   const mask = (val: string) => val ? "••••••••" : "";
   const canSave = !!(tenantId && clientId && clientSecret);
+  const sohSettingsChanged =
+    customerId !== (connection.cc_customer_id || "") ||
+    warehouseName !== (connection.cc_warehouse_name || "Default");
 
+  const handleSaveSOHSettings = async () => {
+    try {
+      await upsertMutation.mutateAsync({
+        id: connection.id,
+        name: connection.name,
+        code: connection.code,
+        color: connection.color,
+        api_endpoint: connection.api_endpoint,
+        tenant_id: connection.tenant_id,
+        client_id: connection.client_id,
+        client_secret: connection.client_secret,
+        is_active: connection.is_active,
+        logo_url: connection.logo_url,
+        cc_customer_id: customerId || null,
+        cc_warehouse_name: warehouseName || "Default",
+      });
+      toast({ title: "Saved", description: "SOH settings updated." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
   const handleTestConnection = async () => {
     try {
       await testMutation.mutateAsync(connection.id);
