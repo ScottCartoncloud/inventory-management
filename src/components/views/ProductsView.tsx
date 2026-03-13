@@ -33,11 +33,22 @@ export function ProductsView() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
-      {/* Toolbar */}
-      <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
-        <div className="flex items-center gap-3 flex-1 flex-wrap">
+      {/* Header line 1: Title and Add button */}
+      <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3">
+        <div className="flex items-center gap-3">
           <span className="text-base font-semibold">Products</span>
           <span className="text-xs text-muted-foreground">{products.length} total · click any row to inspect</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm"><Download size={14} />Export</Button>
+          <Button size="sm" onClick={() => setShowAddDialog(true)}><Plus size={14} />Add Product</Button>
+        </div>
+      </div>
+
+      {/* Header line 2: Filters and search */}
+      <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">
+        <div className="flex items-center gap-3 flex-1 flex-wrap">
+          {/* Space for future filters */}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -47,8 +58,6 @@ export function ProductsView() {
           <select className="h-8 px-3 pr-8 border border-border rounded-md bg-card text-sm outline-none cursor-pointer appearance-none" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             {categories.map(c => <option key={c} value={c}>{c === "all" ? "All Categories" : c}</option>)}
           </select>
-          <Button variant="outline" size="sm"><Download size={14} />Export</Button>
-          <Button size="sm" onClick={() => setShowAddDialog(true)}><Plus size={14} />Add Product</Button>
         </div>
       </div>
 
