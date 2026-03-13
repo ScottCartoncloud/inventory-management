@@ -91,6 +91,158 @@ export type Database = {
         }
         Relationships: []
       }
+      product_mappings: {
+        Row: {
+          cc_product_code: string
+          cc_product_id: string | null
+          connection_id: string
+          created_at: string
+          id: string
+          is_override: boolean
+          last_synced_at: string | null
+          product_id: string
+        }
+        Insert: {
+          cc_product_code: string
+          cc_product_id?: string | null
+          connection_id: string
+          created_at?: string
+          id?: string
+          is_override?: boolean
+          last_synced_at?: string | null
+          product_id: string
+        }
+        Update: {
+          cc_product_code?: string
+          cc_product_id?: string | null
+          connection_id?: string
+          created_at?: string
+          id?: string
+          is_override?: boolean
+          last_synced_at?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_mappings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_uoms: {
+        Row: {
+          id: string
+          name: string
+          product_id: string
+          qty: number
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          product_id: string
+          qty?: number
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          product_id?: string
+          qty?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_uoms_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          category: string
+          cost_price: number
+          created_at: string
+          dim_unit: string | null
+          height: number | null
+          id: string
+          is_active: boolean
+          length: number | null
+          min_qty: number
+          name: string
+          notes: string | null
+          sell_price: number
+          sku: string
+          supplier: string | null
+          tax_rate: number
+          unit: string
+          updated_at: string
+          weight: number | null
+          weight_unit: string | null
+          width: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string
+          cost_price?: number
+          created_at?: string
+          dim_unit?: string | null
+          height?: number | null
+          id?: string
+          is_active?: boolean
+          length?: number | null
+          min_qty?: number
+          name: string
+          notes?: string | null
+          sell_price?: number
+          sku: string
+          supplier?: string | null
+          tax_rate?: number
+          unit?: string
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+          width?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          category?: string
+          cost_price?: number
+          created_at?: string
+          dim_unit?: string | null
+          height?: number | null
+          id?: string
+          is_active?: boolean
+          length?: number | null
+          min_qty?: number
+          name?: string
+          notes?: string | null
+          sell_price?: number
+          sku?: string
+          supplier?: string | null
+          tax_rate?: number
+          unit?: string
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
