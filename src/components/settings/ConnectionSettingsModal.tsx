@@ -33,13 +33,12 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
               {connection.logo_url ? (
                 <img src={connection.logo_url} alt={connection.name} className="w-full h-full object-contain" />
               ) : (
-                connection.code.substring(0, 2).toUpperCase()
+                connection.name.substring(0, 2).toUpperCase()
               )}
             </div>
             <div>
               <DialogTitle className="text-base font-bold">{connection.name}</DialogTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground font-mono">{connection.code}</span>
                 <Badge
                   variant="outline"
                   className={configured
