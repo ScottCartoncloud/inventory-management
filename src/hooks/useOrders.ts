@@ -61,7 +61,6 @@ function getStateCode(state?: CartonCloudAddress["state"]): string {
 function formatAddress(details?: CartonCloudOrder["details"]): string {
   if (!details?.deliver?.address) return "";
   const addr = details.deliver.address;
-  const name = addr.companyName || addr.contactName || "";
 
   const parts = [
     safeString(addr.address1),
@@ -71,9 +70,12 @@ function formatAddress(details?: CartonCloudOrder["details"]): string {
     safeString(addr.postcode),
   ].filter(Boolean);
 
-  const addressLine = parts.join(", ");
-  if (name && addressLine) return `${name}, ${addressLine}`;
-  return name || addressLine;
+  return parts.join(", ");
+}
+
+function getCustomerName(details?: CartonCloudOrder["details"]): string {
+  const addr = details?.deliver?.address;
+  return addr?.companyName || addr?.contactName || "";
 }
 
 function transformOrder(
