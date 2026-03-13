@@ -48,8 +48,6 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
           <TableRow className="bg-muted">
             <TableHead>Reference</TableHead>
             <TableHead>PO ID</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Delivery Address</TableHead>
             <TableHead className="text-right">Qty</TableHead>
             <TableHead>Destination</TableHead>
             <TableHead>Ordered</TableHead>
