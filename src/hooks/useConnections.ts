@@ -11,6 +11,7 @@ export interface Connection {
   client_id: string | null;
   client_secret: string | null;
   is_active: boolean;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }
