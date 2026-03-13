@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
     if (Array.isArray(resultData) && resultData.length > 0) {
       allRows = resultData;
       pagesFetched = 1;
+    } else {
       // Results might be paginated at a sub-resource endpoint
       let page = 1;
       let totalPages = 1;
@@ -170,18 +171,27 @@ Deno.serve(async (req) => {
         const resultsData = await resultsResponse.json();
         if (page === 1) {
           console.log("CC SOH results raw response:", JSON.stringify(resultsData));
-          console.log("CC SOH results headers - Total-Pages:", resultsResponse.headers.get("Total-Pages"),
-            "Page-Number:", resultsResponse.headers.get("Page-Number"));
+          console.log(
+            "CC SOH results headers - Total-Pages:",
+            resultsResponse.headers.get("Total-Pages"),
+            "Page-Number:",
+            resultsResponse.headers.get("Page-Number")
+          );
         }
 
-        const rows = Array.isArray(resultsData) ? resultsData : (resultsData.content || resultsData.results || resultsData.data || resultsData.rows || []);
+        const rows = Array.isArray(resultsData)
+          ? resultsData
+          : resultsData.content || resultsData.results || resultsData.data || resultsData.rows || [];
+
         allRows = allRows.concat(rows);
 
         const tp = resultsResponse.headers.get("Total-Pages");
         if (tp) totalPages = parseInt(tp, 10);
+
         page++;
-        pagesFetched = page - 1;
       }
+
+      pagesFetched = Math.max(1, page - 1);
     }
 
     console.log(`CC SOH total rows extracted: ${allRows.length}`);
