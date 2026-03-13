@@ -19,6 +19,7 @@ interface PurchaseOrdersViewProps {
 export function PurchaseOrdersView({ activeLocation, onLocationChange }: PurchaseOrdersViewProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
 
   const { purchaseOrders, isLoading, errors, isUsingMockData } = usePurchaseOrders();
 
