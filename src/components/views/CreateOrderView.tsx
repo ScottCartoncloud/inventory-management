@@ -168,11 +168,11 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                       <SelectValue placeholder="Select a location…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {LOCATIONS.map(loc => (
+                      {configuredConnections.map(loc => (
                         <SelectItem key={loc.id} value={loc.id}>
                           <span className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: loc.color }} />
-                            {loc.name} ({loc.code})
+                            {loc.name}
                           </span>
                         </SelectItem>
                       ))}
