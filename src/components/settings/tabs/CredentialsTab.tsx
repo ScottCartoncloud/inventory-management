@@ -26,7 +26,6 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const hasCredentials = !!(connection.client_id && connection.client_secret && connection.tenant_id);
   const [isEditing, setIsEditing] = useState(!hasCredentials);
   const [showSecret, setShowSecret] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   const [tenantId, setTenantId] = useState(connection.tenant_id || "");
   const [clientId, setClientId] = useState(connection.client_id || "");
