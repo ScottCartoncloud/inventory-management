@@ -2,22 +2,29 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useProducts, type DBProduct } from "@/hooks/useProducts";
-import { getStockStatus } from "@/data/inventory-utils";
-import { StatusBadge } from "@/components/StatusBadge";
+import { useProducts, useCreateProduct, useBulkUpsertMappings, type DBProduct } from "@/hooks/useProducts";
+import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
+import { supabase } from "@/integrations/supabase/client";
 import { SummaryBar } from "@/components/SummaryBar";
 import { ProductDrawer } from "@/components/ProductDrawer";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Download, Plus } from "lucide-react";
+import { Search, Download, Plus, Cloud, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ProductsView() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState<DBProduct | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const { data: products = [], isLoading } = useProducts();
+  const { data: connections = [] } = useConnections();
+  const queryClient = useQueryClient();
+
+  const configuredConnections = connections.filter(c => c.is_active && isConnectionConfigured(c));
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
 
@@ -32,6 +39,116 @@ export function ProductsView() {
   }), [search, categoryFilter, products]);
 
   const totalValue = products.reduce((s, p) => s + p.cost_price, 0);
+
+  async function handleFetchFromCC() {
+    if (configuredConnections.length === 0) {
+      toast({ title: "No connections", description: "Configure a CartonCloud connection in Settings first.", variant: "destructive" });
+      return;
+    }
+
+    setIsFetching(true);
+    let totalImported = 0;
+
+    try {
+      for (const conn of configuredConnections) {
+        // POST to warehouse-products/search with empty search to get all
+        const { data, error } = await supabase.functions.invoke("cartoncloud-proxy", {
+          body: {
+            connectionId: conn.id,
+            method: "POST",
+            path: "warehouse-products/search",
+            body: { condition: { type: "AndCondition", conditions: [] } },
+          },
+        });
+
+        if (error) {
+          console.error(`Error fetching from ${conn.name}:`, error);
+          toast({ title: `Error from ${conn.name}`, description: error.message, variant: "destructive" });
+          continue;
+        }
+
+        const ccProducts = Array.isArray(data) ? data : [];
+        const existingSkus = new Set(products.map(p => p.sku.toLowerCase()));
+
+        for (const cc of ccProducts) {
+          const code = cc.code || cc.product?.code;
+          const name = cc.name || cc.product?.name || code;
+          if (!code) continue;
+          if (existingSkus.has(code.toLowerCase())) continue; // skip duplicates
+
+          // Insert product
+          const weight = cc.weight || cc.product?.weight;
+          const width = cc.width || cc.product?.width;
+          const height = cc.height || cc.product?.height;
+          const length = cc.length || cc.product?.length;
+          const barcode = cc.barcode || cc.product?.barcode;
+
+          const uomsRaw = cc.unitsOfMeasure || cc.product?.unitsOfMeasure || [];
+          const uoms = uomsRaw.map((u: any, i: number) => ({
+            name: u.name || u.type || "Each",
+            qty: u.quantity || 1,
+            sort_order: i,
+          }));
+
+          const { data: newProduct, error: insertErr } = await supabase
+            .from("products")
+            .insert({
+              sku: code,
+              name,
+              category: "General",
+              unit: "CTN",
+              min_qty: 0,
+              barcode: barcode || null,
+              cost_price: 0,
+              sell_price: 0,
+              tax_rate: 10,
+              weight: weight || null,
+              weight_unit: "kg",
+              length: length ? length * 100 : null,
+              width: width ? width * 100 : null,
+              height: height ? height * 100 : null,
+              dim_unit: "cm",
+            })
+            .select()
+            .single();
+
+          if (insertErr) {
+            console.warn(`Skipping ${code}:`, insertErr.message);
+            continue;
+          }
+
+          // Insert UOMs
+          if (uoms.length > 0 && newProduct) {
+            await supabase.from("product_uoms").insert(
+              uoms.map((u: any) => ({ ...u, product_id: newProduct.id }))
+            );
+          }
+
+          // Create mapping
+          if (newProduct) {
+            await supabase.from("product_mappings").upsert({
+              product_id: newProduct.id,
+              connection_id: conn.id,
+              cc_product_code: code,
+              cc_product_id: cc.id || null,
+              is_override: false,
+              last_synced_at: new Date().toISOString(),
+            }, { onConflict: "product_id,connection_id" });
+          }
+
+          existingSkus.add(code.toLowerCase());
+          totalImported++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({ title: "Import complete", description: `${totalImported} products imported from CartonCloud.` });
+    } catch (err: any) {
+      toast({ title: "Import error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsFetching(false);
+    }
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -49,6 +166,10 @@ export function ProductsView() {
           <select className="h-8 px-3 pr-8 border border-border rounded-md bg-card text-sm outline-none cursor-pointer appearance-none" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             {categories.map(c => <option key={c} value={c}>{c === "all" ? "All Categories" : c}</option>)}
           </select>
+          <Button variant="outline" size="sm" onClick={handleFetchFromCC} disabled={isFetching || configuredConnections.length === 0}>
+            {isFetching ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
+            {isFetching ? "Importing…" : "Fetch from CC"}
+          </Button>
           <Button variant="outline" size="sm"><Download size={14} />Export</Button>
           <Button size="sm" onClick={() => setShowAddDialog(true)}><Plus size={14} />Add Product</Button>
         </div>
@@ -93,10 +214,9 @@ export function ProductsView() {
                 <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                   <div className="text-4xl mb-3 opacity-30">📦</div>
                   <div className="font-semibold mb-1">No products found</div>
-                  <div className="text-sm">{products.length === 0 ? "Add your first product or sync from CartonCloud" : "Try adjusting your search or filters"}</div>
+                  <div className="text-sm">{products.length === 0 ? "Click 'Fetch from CC' to import products from CartonCloud" : "Try adjusting your search or filters"}</div>
                 </TableCell></TableRow>
               ) : filtered.map(product => {
-                const status = product.min_qty > 0 ? "ok" : "ok"; // SOH not available yet
                 const isSelected = selectedProduct?.id === product.id;
                 return (
                   <TableRow
