@@ -69,6 +69,8 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         client_secret: clientSecret,
         is_active: true,
         logo_url: connection.logo_url,
+        cc_customer_id: customerId || null,
+        cc_warehouse_name: warehouseName || "Default",
       });
       setIsEditing(false);
       toast({ title: "Saved", description: `Connection for ${connection.code} updated.` });
