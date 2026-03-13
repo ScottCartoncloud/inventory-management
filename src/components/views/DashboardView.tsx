@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { useConnections, isConnectionConfigured, type Connection } from "@/hooks/useConnections";
 import { useOrders } from "@/hooks/useOrders";
+import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
-import { MapPin, AlertTriangle, ClipboardCheck, Cloud } from "lucide-react";
+import { MapPin, AlertTriangle, ClipboardCheck, Cloud, PackageOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardViewProps {
@@ -13,17 +14,21 @@ interface DashboardViewProps {
 export function DashboardView({ onNavigate }: DashboardViewProps) {
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { orders, isLoading: ordersLoading } = useOrders();
+  const { purchaseOrders, isLoading: poLoading } = usePurchaseOrders();
 
   const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
   const activeOrders = orders.filter(o => o.status !== "completed").length;
   const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
+  const pendingInbound = purchaseOrders.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length;
 
   const locStats = configuredConnections.map(conn => {
     const connOrders = orders.filter(o => o.location === conn.code.toLowerCase());
+    const connPOs = purchaseOrders.filter(o => o.location === conn.code.toLowerCase());
     return {
       ...conn,
       activeOrders: connOrders.filter(o => o.status !== "completed").length,
       totalOrders: connOrders.length,
+      pendingInbound: connPOs.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length,
     };
   });
 
@@ -33,7 +38,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     { label: "Connected Locations", value: configuredConnections.length, sub: `${(connections || []).length} total configured`, cls: "text-primary" },
     { label: "Total Orders", value: orders.length, sub: "From all connections", cls: "" },
     { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "text-[hsl(142,76%,36%)]" },
-    { label: "Pending", value: orders.filter(o => o.status === "pending").length, sub: "Awaiting pick & pack", cls: "text-[hsl(38,92%,50%)]" },
+    { label: "Pending Inbound", value: pendingInbound, sub: `${purchaseOrders.length} total POs`, cls: "text-[hsl(38,92%,50%)]" },
   ];
 
   return (
@@ -95,6 +100,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   <div className="flex justify-between items-center">
                     <span className="text-[0.8125rem] text-muted-foreground">Total Orders</span>
                     <span className="text-[0.9375rem] font-semibold">{loc.totalOrders}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[0.8125rem] text-muted-foreground">Pending Inbound</span>
+                    <span className="text-[0.9375rem] font-semibold text-[hsl(38,92%,50%)]">{loc.pendingInbound}</span>
                   </div>
                 </div>
               </Card>

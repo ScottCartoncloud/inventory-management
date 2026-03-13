@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { DashboardView } from "@/components/views/DashboardView";
 import { InventoryView } from "@/components/views/InventoryView";
 import { OrdersView } from "@/components/views/OrdersView";
+import { PurchaseOrdersView } from "@/components/views/PurchaseOrdersView";
 import { ProductsView } from "@/components/views/ProductsView";
 import { SettingsView } from "@/components/views/SettingsView";
 
@@ -22,6 +23,7 @@ const Index = () => {
         {activeTab === "dashboard" && <DashboardView onNavigate={handleNavigate} />}
         {activeTab === "inventory" && <InventoryView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
         {activeTab === "orders" && <OrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
+        {activeTab === "purchase-orders" && <PurchaseOrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
         {activeTab === "products" && <ProductsView />}
         {activeTab === "settings" && <SettingsView />}
       </main>
