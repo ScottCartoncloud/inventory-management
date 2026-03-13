@@ -75,15 +75,17 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 onClick={() => onNavigate("orders", loc.code.toLowerCase())}
               >
                 <div className="p-3.5 text-white" style={{ background: loc.color }}>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2.5 mb-1">
                     {loc.logo_url ? (
-                      <img src={loc.logo_url} alt={loc.name} className="w-7 h-7 rounded object-contain bg-white/20 p-0.5" />
+                      <img src={loc.logo_url} alt={loc.name} className="w-9 h-9 rounded-md object-contain bg-white/90 p-1" />
                     ) : (
-                      <div className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded bg-white/20 inline-block">{loc.code}</div>
+                      <div className="w-9 h-9 rounded-md bg-white/20 flex items-center justify-center text-xs font-bold">{loc.code}</div>
                     )}
+                    <div>
+                      <div className="font-semibold text-[0.9375rem] leading-tight">{loc.name}</div>
+                      <div className="text-xs opacity-75">{loc.api_endpoint.replace("https://", "")}</div>
+                    </div>
                   </div>
-                  <div className="font-semibold text-[0.9375rem]">{loc.name}</div>
-                  <div className="text-xs opacity-75">{loc.api_endpoint.replace("https://", "")}</div>
                 </div>
                 <div className="p-3 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
