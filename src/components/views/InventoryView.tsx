@@ -5,7 +5,7 @@ import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SummaryBar } from "@/components/SummaryBar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Download, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { Search, Download, RefreshCw, Loader2, AlertTriangle, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useSOHSummary,
@@ -26,6 +26,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { summary, isLoading, hasData, connections } = useSOHSummary();
   const refreshAll = useRefreshAllSOH();
@@ -63,6 +64,48 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
 
   const totalOnHand = filtered.reduce((s, p) => s + getQty(p, activeLocation), 0);
   const showCols = activeLocation === "all";
+  const colCount = showCols ? 5 + configuredConnections.length : 7;
+
+  const toggleExpand = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  /** Check if a product has any non-available stock across relevant connections */
+  const productHasNonAvailable = (product: SOHProductSummary): boolean => {
+    if (activeLocation === "all") {
+      return product.connections.some(c => c.has_non_available);
+    }
+    const conn = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+    return conn?.has_non_available ?? false;
+  };
+
+  /** Get the breakdown rows to display when expanded */
+  const getExpandedBreakdown = (product: SOHProductSummary): { connection_code: string; connection_color: string; status: string; qty: number; uom: string }[] => {
+    const rows: { connection_code: string; connection_color: string; status: string; qty: number; uom: string }[] = [];
+    const relevantConns = activeLocation === "all"
+      ? product.connections
+      : product.connections.filter(c => c.connection_code.toLowerCase() === activeLocation);
+
+    for (const conn of relevantConns) {
+      for (const b of conn.status_breakdown) {
+        if (b.qty > 0) {
+          rows.push({
+            connection_code: conn.connection_code,
+            connection_color: conn.connection_color,
+            status: b.status,
+            qty: b.qty,
+            uom: product.product_unit,
+          });
+        }
+      }
+    }
+    return rows;
+  };
 
   const handleRefresh = async () => {
     try {
@@ -93,8 +136,12 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
       ? "hsl(38,92%,50%)"
       : "hsl(0,84%,60%)";
 
-  // Empty state: no connections configured with customer ID
   const hasSOHCapableConnections = configuredConnections.some(c => (c as any).cc_customer_id);
+
+  const formatStatus = (s: string) =>
+    s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+
+  const isAvailableStatus = (s: string) => s === "AVAILABLE" || s === "OK";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -165,6 +212,7 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
           <Table>
             <TableHeader>
               <TableRow className="bg-muted">
+                <TableHead className="w-8" />
                 <TableHead>Product / SKU</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
@@ -189,13 +237,13 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={showCols ? 4 + configuredConnections.length + 1 : 6} className="text-center py-12">
+                  <TableCell colSpan={colCount} className="text-center py-12">
                     <Loader2 className="mx-auto animate-spin text-muted-foreground" size={24} />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={showCols ? 4 + configuredConnections.length + 1 : 6} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={colCount} className="text-center py-12 text-muted-foreground">
                     <div className="text-4xl mb-3 opacity-30">📦</div>
                     <div className="font-semibold mb-1">No products found</div>
                     <div className="text-sm">Try adjusting your filters</div>
@@ -204,55 +252,79 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
               ) : filtered.map(product => {
                 const qty = getQty(product, activeLocation);
                 const status = getStockStatus(qty, product.product_min_qty);
+                const hasWarning = productHasNonAvailable(product);
+                const isExpanded = expandedRows.has(product.product_id);
+                const breakdown = getExpandedBreakdown(product);
+
                 return (
-                  <TableRow key={product.product_id}>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">{product.product_name}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{product.product_sku}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell><span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">{product.product_category}</span></TableCell>
-                    <TableCell className="text-muted-foreground text-[0.8125rem]">{product.product_unit}</TableCell>
-                    {showCols ? (
-                      <>
-                        {configuredConnections.map(conn => {
-                          const connData = product.connections.find(c => c.connection_id === conn.id);
-                          const connQty = connData?.total_qty ?? 0;
-                          const hasWarning = connData?.has_non_available ?? false;
-                          return (
-                            <TableCell key={conn.id} className="text-right">
-                              <SOHCell
-                                qty={connQty}
-                                minQty={product.product_min_qty}
-                                hasWarning={hasWarning}
-                                breakdown={connData?.status_breakdown}
-                              />
-                            </TableCell>
-                          );
-                        })}
-                        <TableCell className="text-right font-semibold">{qty.toLocaleString()}</TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell className="text-right">
-                          {(() => {
-                            const connData = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+                  <>
+                    <TableRow key={product.product_id} className={hasWarning ? "cursor-pointer hover:bg-muted/50" : ""} onClick={hasWarning ? () => toggleExpand(product.product_id) : undefined}>
+                      <TableCell className="w-8 px-2">
+                        {hasWarning && (
+                          <button
+                            className="p-0.5 rounded hover:bg-muted transition-colors"
+                            onClick={e => { e.stopPropagation(); toggleExpand(product.product_id); }}
+                          >
+                            {isExpanded ? <ChevronDown size={14} className="text-muted-foreground" /> : <ChevronRight size={14} className="text-muted-foreground" />}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">{product.product_name}</span>
+                          <span className="text-xs text-muted-foreground font-mono">{product.product_sku}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell><span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">{product.product_category}</span></TableCell>
+                      <TableCell className="text-muted-foreground text-[0.8125rem]">{product.product_unit}</TableCell>
+                      {showCols ? (
+                        <>
+                          {configuredConnections.map(conn => {
+                            const connData = product.connections.find(c => c.connection_id === conn.id);
+                            const connQty = connData?.total_qty ?? 0;
+                            const connHasWarning = connData?.has_non_available ?? false;
                             return (
-                              <SOHCell
-                                qty={qty}
-                                minQty={product.product_min_qty}
-                                hasWarning={connData?.has_non_available ?? false}
-                                breakdown={connData?.status_breakdown}
-                              />
+                              <TableCell key={conn.id} className="text-right">
+                                <SOHCell qty={connQty} minQty={product.product_min_qty} hasWarning={connHasWarning} />
+                              </TableCell>
                             );
-                          })()}
+                          })}
+                          <TableCell className="text-right font-semibold">{qty.toLocaleString()}</TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="text-right">
+                            {(() => {
+                              const connData = product.connections.find(c => c.connection_code.toLowerCase() === activeLocation);
+                              return <SOHCell qty={qty} minQty={product.product_min_qty} hasWarning={connData?.has_non_available ?? false} />;
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground text-[0.8125rem]">{product.product_min_qty}</TableCell>
+                        </>
+                      )}
+                      <TableCell><StatusBadge status={status} /></TableCell>
+                    </TableRow>
+                    {isExpanded && hasWarning && (
+                      <TableRow key={`${product.product_id}-detail`} className="bg-muted/30">
+                        <TableCell />
+                        <TableCell colSpan={colCount - 1} className="py-2">
+                          <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs">
+                            {breakdown.map((b, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                {activeLocation === "all" && (
+                                  <span className="font-medium" style={{ color: b.connection_color }}>{b.connection_code}</span>
+                                )}
+                                <span className={isAvailableStatus(b.status) ? "text-foreground" : "text-[hsl(38,92%,50%)] font-medium"}>
+                                  {formatStatus(b.status)}:
+                                </span>
+                                <span className="font-mono">{b.qty.toLocaleString()} {b.uom}</span>
+                              </div>
+                            ))}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-right text-muted-foreground text-[0.8125rem]">{product.product_min_qty}</TableCell>
-                      </>
+                      </TableRow>
                     )}
-                    <TableCell><StatusBadge status={status} /></TableCell>
-                  </TableRow>
+                  </>
                 );
               })}
             </TableBody>
@@ -263,11 +335,10 @@ export function InventoryView({ activeLocation, onLocationChange }: InventoryVie
   );
 }
 
-function SOHCell({ qty, minQty, hasWarning, breakdown }: {
+function SOHCell({ qty, minQty, hasWarning }: {
   qty: number;
   minQty: number;
   hasWarning: boolean;
-  breakdown?: { status: string; qty: number }[];
 }) {
   if (qty === 0) {
     return <span className="inline-block px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-xs">—</span>;
@@ -275,28 +346,10 @@ function SOHCell({ qty, minQty, hasWarning, breakdown }: {
 
   const color = qty < minQty ? "text-[hsl(38,92%,50%)] font-semibold" : "text-foreground font-medium";
 
-  if (!hasWarning || !breakdown) {
-    return <span className={color}>{qty.toLocaleString()}</span>;
-  }
-
-  const tooltipText = breakdown
-    .filter(b => b.qty > 0)
-    .map(b => `${b.qty.toLocaleString()} ${b.status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}`)
-    .join(" · ");
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className={`${color} inline-flex items-center gap-1 cursor-default`}>
-            {qty.toLocaleString()}
-            <AlertTriangle size={12} className="text-[hsl(38,92%,50%)]" />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">{tooltipText}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <span className={`${color} inline-flex items-center gap-1`}>
+      {qty.toLocaleString()}
+      {hasWarning && <AlertTriangle size={12} className="text-[hsl(38,92%,50%)]" />}
+    </span>
   );
 }
