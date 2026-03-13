@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useConnections, isConnectionConfigured, useTestConnection, type Connection } from "@/hooks/useConnections";
 import { ConnectionSettingsModal } from "@/components/settings/ConnectionSettingsModal";
-import { Settings, Plus, Cloud, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Settings, Plus, Cloud, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 
 export function SettingsView() {
   const { data: connections, isLoading } = useConnections();
