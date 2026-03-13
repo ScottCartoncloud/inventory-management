@@ -17,8 +17,6 @@ export interface PurchaseOrder {
   id: string;
   numericId: string;
   ref: string;
-  customer: string;
-  deliveryAddress: string;
   qty: number;
   location: string;
   status: string;

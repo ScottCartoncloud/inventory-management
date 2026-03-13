@@ -66,8 +66,6 @@ export function PurchaseOrdersView({ activeLocation, onLocationChange }: Purchas
             <TableRow key={order.id}>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ref}</TableCell>
               <TableCell className="font-medium">{order.id}</TableCell>
-              <TableCell>{order.customer}</TableCell>
-              <TableCell className="text-muted-foreground text-[0.8125rem] max-w-[260px] truncate">{order.deliveryAddress}</TableCell>
               <TableCell className="text-right font-semibold">{order.qty.toLocaleString()}</TableCell>
               <TableCell><LocationChip locationId={order.location} /></TableCell>
               <TableCell className="text-muted-foreground text-[0.8125rem]">{order.ordered}</TableCell>
