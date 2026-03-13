@@ -14,6 +14,13 @@ export interface Connection {
   logo_url: string | null;
   created_at: string;
   updated_at: string;
+  product_sync_mode: string;
+  product_auto_import: boolean;
+  product_match_strategy: string;
+  product_last_synced_at: string | null;
+  product_last_sync_matched: number | null;
+  product_last_sync_unmatched_cc: number | null;
+  product_last_sync_unmatched_portal: number | null;
 }
 
 export function useConnections() {
@@ -25,7 +32,7 @@ export function useConnections() {
         .select("*")
         .order("code", { ascending: true });
       if (error) throw error;
-      return data as Connection[];
+      return data as unknown as Connection[];
     },
   });
 }
@@ -72,6 +79,72 @@ export function useUpsertConnection() {
         if (error) throw error;
         return data;
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+  });
+}
+
+export function useUpdateProductSyncSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      product_sync_mode?: string;
+      product_auto_import?: boolean;
+      product_match_strategy?: string;
+    }) => {
+      const updates: Record<string, unknown> = {};
+      if (input.product_sync_mode !== undefined) updates.product_sync_mode = input.product_sync_mode;
+      if (input.product_auto_import !== undefined) updates.product_auto_import = input.product_auto_import;
+      if (input.product_match_strategy !== undefined) updates.product_match_strategy = input.product_match_strategy;
+
+      const { error } = await supabase
+        .from("connections")
+        .update(updates)
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+  });
+}
+
+export function useUpdateSyncStats() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      product_last_synced_at: string;
+      product_last_sync_matched: number;
+      product_last_sync_unmatched_cc: number;
+      product_last_sync_unmatched_portal: number;
+    }) => {
+      const { error } = await supabase
+        .from("connections")
+        .update({
+          product_last_synced_at: input.product_last_synced_at,
+          product_last_sync_matched: input.product_last_sync_matched,
+          product_last_sync_unmatched_cc: input.product_last_sync_unmatched_cc,
+          product_last_sync_unmatched_portal: input.product_last_sync_unmatched_portal,
+        })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+    },
+  });
+}
+
+export function useDeleteConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("connections").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["connections"] });
