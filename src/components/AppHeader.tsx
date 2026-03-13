@@ -5,6 +5,7 @@ const navItems = [
   { id: "dashboard", label: "Dashboard", icon: Home },
   { id: "inventory", label: "Stock on Hand", icon: Package },
   { id: "orders", label: "Orders", icon: ClipboardCheck },
+  { id: "purchase-orders", label: "Purchase Orders", icon: PackageOpen },
   { id: "products", label: "Products", icon: Briefcase },
   { id: "settings", label: "Settings", icon: Settings },
 ];

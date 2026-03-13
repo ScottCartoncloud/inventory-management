@@ -19,6 +19,14 @@ const statusMap: Record<string, { label: string; className: string }> = {
   CANCELLED:            { label: "Cancelled",           className: "bg-destructive/10 text-destructive border-transparent" },
   ON_HOLD:              { label: "On Hold",             className: "bg-[hsl(38,92%,50%)]/12 text-[hsl(38,92%,50%)] border-transparent" },
 
+  // Inbound order statuses
+  AWAITING_ARRIVAL:     { label: "Awaiting Arrival",   className: "bg-[hsl(210,100%,40%)]/10 text-[hsl(210,100%,40%)] border-transparent" },
+  ARRIVED:              { label: "Arrived",             className: "bg-[hsl(210,100%,40%)]/10 text-[hsl(210,100%,40%)] border-transparent" },
+  RECEIVING_IN_PROGRESS:{ label: "Receiving",           className: "bg-[hsl(38,92%,50%)]/12 text-[hsl(38,92%,50%)] border-transparent" },
+  RECEIVED:             { label: "Received",            className: "bg-[hsl(38,92%,50%)]/12 text-[hsl(38,92%,50%)] border-transparent" },
+  VERIFIED:             { label: "Verified",            className: "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent" },
+  ALLOCATED:            { label: "Allocated",           className: "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent" },
+
   // Internal / legacy statuses
   pending:     { label: "Pending",      className: "bg-[hsl(210,100%,40%)]/10 text-[hsl(210,100%,40%)] border-transparent" },
   in_progress: { label: "In Progress",  className: "bg-[hsl(215,50%,23%)]/10 text-[hsl(215,50%,23%)] border-transparent" },
