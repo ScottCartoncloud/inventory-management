@@ -90,7 +90,7 @@ function transformOrder(
     id: numericId ? `ORD-${numericId}` : ccOrder.id.substring(0, 8),
     numericId,
     ref: ccOrder.references?.customer || "",
-    customer: safeString(ccOrder.customer?.name) || safeString((ccOrder as any).contactName) || "",
+    customer: getCustomerName(ccOrder.details),
     qty: totalQty,
     location: connection.code.toLowerCase(),
     status: ccOrder.status,
