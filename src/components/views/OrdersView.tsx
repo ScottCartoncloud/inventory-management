@@ -31,15 +31,14 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
     return matchLoc && matchSearch && (statusFilter === "all" || o.status === statusFilter);
   }), [orders, search, statusFilter, activeLocation]);
 
-  if (mode === "create") {
-    return <CreateOrderView onBack={() => setMode("list")} />;
-  }
-
-  // Collect unique statuses for filter dropdown
   const uniqueStatuses = useMemo(() => {
     const set = new Set(orders.map(o => o.status));
     return Array.from(set).sort();
   }, [orders]);
+
+  if (mode === "create") {
+    return <CreateOrderView onBack={() => setMode("list")} />;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
