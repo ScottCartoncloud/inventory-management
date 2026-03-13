@@ -2,14 +2,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LOCATIONS } from "@/data/locations";
+import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import { PRODUCTS } from "@/data/products";
-import { StatusBadge } from "@/components/StatusBadge";
 import { LocationConnectionCard } from "@/components/settings/LocationConnectionCard";
-import { Settings, Plus, Cloud } from "lucide-react";
+import { Settings, Plus, Cloud, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function SettingsView() {
+  const { data: connections, isLoading } = useConnections();
+
   return (
     <div className="flex-1 overflow-y-auto animate-in fade-in duration-200">
       <div className="p-5 max-w-3xl mx-auto">
@@ -52,40 +54,51 @@ export function SettingsView() {
                 Each location connects to an independent CartonCloud tenant with its own API credentials.
               </p>
 
-              <Accordion type="single" collapsible className="w-full">
-                {LOCATIONS.map(loc => (
-                  <AccordionItem key={loc.id} value={loc.id}>
-                    <AccordionTrigger className="hover:no-underline py-4">
-                      <div className="flex items-center gap-3 flex-1 mr-4">
-                        <div
-                          className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0"
-                          style={{ background: loc.color }}
-                        >
-                          {loc.code}
-                        </div>
-                        <div className="text-left flex-1">
-                          <div className="font-medium">{loc.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {loc.endpoint} · {PRODUCTS.filter(p => (p as any)[loc.id] > 0).length} active SKUs
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <Accordion type="single" collapsible className="w-full">
+                  {(connections || []).map(conn => {
+                    const configured = isConnectionConfigured(conn);
+                    return (
+                      <AccordionItem key={conn.id} value={conn.id}>
+                        <AccordionTrigger className="hover:no-underline py-4">
+                          <div className="flex items-center gap-3 flex-1 mr-4">
+                            <div
+                              className="w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0"
+                              style={{ background: conn.color }}
+                            >
+                              {conn.code}
+                            </div>
+                            <div className="text-left flex-1">
+                              <div className="font-medium">{conn.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {conn.api_endpoint.replace("https://", "")}
+                              </div>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={configured
+                                ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent"
+                                : "bg-muted text-muted-foreground border-transparent"
+                              }
+                            >
+                              {configured ? "Connected" : "Not Configured"}
+                            </Badge>
                           </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={loc.isConnected
-                            ? "bg-[hsl(142,76%,36%)]/10 text-[hsl(142,76%,36%)] border-transparent"
-                            : "bg-muted text-muted-foreground border-transparent"
-                          }
-                        >
-                          {loc.isConnected ? "Connected" : "Disconnected"}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-4">
-                      <LocationConnectionCard location={loc} />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4">
+                          <LocationConnectionCard connection={conn} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
 
               <div className="mt-5">
                 <Button><Plus size={14} /> Add Connection</Button>

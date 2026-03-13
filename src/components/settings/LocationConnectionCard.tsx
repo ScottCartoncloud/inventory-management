@@ -1,55 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import type { Location } from "@/data/locations";
+import { useUpsertConnection, useTestConnection, type Connection } from "@/hooks/useConnections";
+import { toast } from "@/hooks/use-toast";
 
 interface LocationConnectionCardProps {
-  location: Location;
+  connection: Connection;
 }
 
-export function LocationConnectionCard({ location }: LocationConnectionCardProps) {
-  const [isConnected, setIsConnected] = useState(location.isConnected);
-  const [isSaved, setIsSaved] = useState(location.isConnected);
-  const [isEditing, setIsEditing] = useState(!location.isConnected);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+export function LocationConnectionCard({ connection }: LocationConnectionCardProps) {
+  const hasCredentials = !!(connection.client_id && connection.client_secret && connection.tenant_id);
+  const [isEditing, setIsEditing] = useState(!hasCredentials);
   const [showSecret, setShowSecret] = useState(false);
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
-  const [tenantId, setTenantId] = useState(location.isConnected ? "tenant-" + location.id : "");
-  const [clientId, setClientId] = useState(location.isConnected ? "client-" + location.id : "");
-  const [clientSecret, setClientSecret] = useState(location.isConnected ? "secret-" + location.id : "");
-  const [endpoint, setEndpoint] = useState(location.endpoint);
+  const [tenantId, setTenantId] = useState(connection.tenant_id || "");
+  const [clientId, setClientId] = useState(connection.client_id || "");
+  const [clientSecret, setClientSecret] = useState(connection.client_secret || "");
+  const [endpoint, setEndpoint] = useState(connection.api_endpoint || "https://api.cartoncloud.com");
+
+  const upsertMutation = useUpsertConnection();
+  const testMutation = useTestConnection();
 
   const mask = (val: string) => val ? "••••••••" : "";
+  const canSave = !!(tenantId && clientId && clientSecret);
 
   const handleTestConnection = async () => {
-    setIsTesting(true);
     setTestResult(null);
-    await new Promise(r => setTimeout(r, 1500));
-    const success = tenantId && clientId && clientSecret;
-    setTestResult(success ? "success" : "error");
-    setIsTesting(false);
+    try {
+      await testMutation.mutateAsync(connection.id);
+      setTestResult("success");
+    } catch {
+      setTestResult("error");
+    }
   };
 
-  const handleSave = () => {
-    setIsSaved(true);
-    setIsEditing(false);
-    setIsConnected(true);
-    setTestResult(null);
+  const handleSave = async () => {
+    try {
+      await upsertMutation.mutateAsync({
+        id: connection.id,
+        name: connection.name,
+        code: connection.code,
+        color: connection.color,
+        api_endpoint: endpoint,
+        tenant_id: tenantId,
+        client_id: clientId,
+        client_secret: clientSecret,
+        is_active: true,
+      });
+      setIsEditing(false);
+      setTestResult(null);
+      toast({ title: "Saved", description: `Connection for ${connection.code} updated.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleDisconnect = () => {
-    setIsConnected(false);
-    setIsSaved(false);
-    setIsEditing(true);
-    setTenantId("");
-    setClientId("");
-    setClientSecret("");
-    setTestResult(null);
+  const handleDisconnect = async () => {
+    try {
+      await upsertMutation.mutateAsync({
+        id: connection.id,
+        name: connection.name,
+        code: connection.code,
+        color: connection.color,
+        api_endpoint: endpoint,
+        tenant_id: null,
+        client_id: null,
+        client_secret: null,
+        is_active: true,
+      });
+      setTenantId("");
+      setClientId("");
+      setClientSecret("");
+      setIsEditing(true);
+      setTestResult(null);
+      toast({ title: "Disconnected", description: `${connection.code} credentials removed.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -61,8 +92,8 @@ export function LocationConnectionCard({ location }: LocationConnectionCardProps
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="api.cartoncloud.com">api.cartoncloud.com (AU/Global)</SelectItem>
-            <SelectItem value="api.na.cartoncloud.com">api.na.cartoncloud.com (North America)</SelectItem>
+            <SelectItem value="https://api.cartoncloud.com">api.cartoncloud.com (AU/Global)</SelectItem>
+            <SelectItem value="https://api.na.cartoncloud.com">api.na.cartoncloud.com (North America)</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -128,13 +159,14 @@ export function LocationConnectionCard({ location }: LocationConnectionCardProps
               variant="outline"
               size="sm"
               onClick={handleTestConnection}
-              disabled={isTesting || !tenantId || !clientId || !clientSecret}
+              disabled={testMutation.isPending || !canSave}
             >
-              {isTesting && <Loader2 size={14} className="animate-spin" />}
+              {testMutation.isPending && <Loader2 size={14} className="animate-spin" />}
               Test Connection
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={!tenantId || !clientId || !clientSecret}>
-              {isSaved ? "Update Credentials" : "Save & Connect"}
+            <Button size="sm" onClick={handleSave} disabled={!canSave || upsertMutation.isPending}>
+              {upsertMutation.isPending && <Loader2 size={14} className="animate-spin mr-1" />}
+              {hasCredentials ? "Update Credentials" : "Save & Connect"}
             </Button>
           </>
         ) : (
