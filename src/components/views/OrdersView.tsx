@@ -104,8 +104,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
           <Table>
             <TableHeader>
               <TableRow className="bg-muted">
-                <TableHead>Reference</TableHead>
-                <TableHead>CartonCloud ID</TableHead>
+                <TableHead>Reference / ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Delivery Address</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
