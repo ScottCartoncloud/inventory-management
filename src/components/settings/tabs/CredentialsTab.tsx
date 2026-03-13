@@ -31,6 +31,8 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const [clientId, setClientId] = useState(connection.client_id || "");
   const [clientSecret, setClientSecret] = useState(connection.client_secret || "");
   const [endpoint, setEndpoint] = useState(connection.api_endpoint || "https://api.cartoncloud.com");
+  const [customerId, setCustomerId] = useState(connection.cc_customer_id || "");
+  const [warehouseName, setWarehouseName] = useState(connection.cc_warehouse_name || "Default");
 
   const upsertMutation = useUpsertConnection();
   const testMutation = useTestConnection();

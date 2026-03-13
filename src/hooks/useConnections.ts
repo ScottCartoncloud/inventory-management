@@ -21,6 +21,10 @@ export interface Connection {
   product_last_sync_matched: number | null;
   product_last_sync_unmatched_cc: number | null;
   product_last_sync_unmatched_portal: number | null;
+  cc_customer_id: string | null;
+  cc_warehouse_name: string | null;
+  soh_refresh_interval: string;
+  soh_last_refreshed_at: string | null;
 }
 
 export function useConnections() {

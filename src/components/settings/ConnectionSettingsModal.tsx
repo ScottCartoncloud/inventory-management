@@ -1,13 +1,11 @@
-import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { type Connection, isConnectionConfigured } from "@/hooks/useConnections";
 import { CredentialsTab } from "./tabs/CredentialsTab";
 import { AppearanceTab } from "./tabs/AppearanceTab";
 import { ProductsTab } from "./tabs/ProductsTab";
+import { SOHTab } from "./tabs/SOHTab";
 
 interface ConnectionSettingsModalProps {
   open: boolean;
@@ -59,21 +57,20 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
         {/* Tabs */}
         <Tabs defaultValue="credentials" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full rounded-none border-b border-border bg-transparent h-auto p-0 px-6 justify-start">
-            <TabsTrigger value="credentials" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]">
-              Credentials
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]">
-              Appearance
-            </TabsTrigger>
-            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]">
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="sales-orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]">
-              Sales Orders
-            </TabsTrigger>
-            <TabsTrigger value="purchase-orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]">
-              Purchase Orders
-            </TabsTrigger>
+            {["credentials", "appearance", "products", "soh", "sales-orders", "purchase-orders"].map(tab => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none py-2.5 text-[0.8125rem]"
+              >
+                {tab === "credentials" ? "Credentials" :
+                 tab === "appearance" ? "Appearance" :
+                 tab === "products" ? "Products" :
+                 tab === "soh" ? "Stock on Hand" :
+                 tab === "sales-orders" ? "Sales Orders" :
+                 "Purchase Orders"}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <div className="flex-1 overflow-y-auto p-6">
@@ -86,6 +83,9 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
             <TabsContent value="products" className="mt-0">
               <ProductsTab connection={connection} />
             </TabsContent>
+            <TabsContent value="soh" className="mt-0">
+              <SOHTab connection={connection} />
+            </TabsContent>
             <TabsContent value="sales-orders" className="mt-0">
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                 <div className="text-4xl opacity-30">📦</div>
@@ -94,9 +94,6 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
                   Configure how sale orders are fetched from this CartonCloud tenant.
                 </p>
                 <Badge variant="outline" className="text-muted-foreground">Coming soon</Badge>
-                <p className="text-xs text-muted-foreground max-w-sm">
-                  Sale order sync settings will be available in a future update.
-                </p>
               </div>
             </TabsContent>
             <TabsContent value="purchase-orders" className="mt-0">
@@ -107,9 +104,6 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
                   Configure how purchase orders are fetched from this CartonCloud tenant.
                 </p>
                 <Badge variant="outline" className="text-muted-foreground">Coming soon</Badge>
-                <p className="text-xs text-muted-foreground max-w-sm">
-                  Purchase order sync settings will be available in a future update.
-                </p>
               </div>
             </TabsContent>
           </div>
