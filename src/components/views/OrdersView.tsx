@@ -123,8 +123,8 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
               <TableRow className="bg-muted">
                 <TableHead>Order</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Delivery Address</TableHead>
                 <TableHead>Items</TableHead>
-                <TableHead>Deliver To</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Created</TableHead>
