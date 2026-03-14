@@ -137,7 +137,11 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
             <Field label="Dispatched" value={formatDate(order.cc_dispatched_at)} />
           </div>
 
-          {/* Raw payload toggle */}
+          {/* Last Synced & Raw payload */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>Last synced: {formatDate(order.updated_at)}</span>
+          </div>
+
           <Collapsible>
             <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <ChevronDown size={12} />
