@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { useConnections, isConnectionConfigured, type Connection } from "@/hooks/useConnections";
-import { useOrders } from "@/hooks/useOrders";
+import { useSaleOrders } from "@/hooks/useSaleOrders";
 import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
 import { useSOHSummary } from "@/hooks/useStockOnHand";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -12,15 +12,17 @@ interface DashboardViewProps {
   onNavigate: (tab: string, location?: string) => void;
 }
 
+const TERMINAL_STATUSES = ["DISPATCHED", "REJECTED", "CANCELLED"];
+
 export function DashboardView({ onNavigate }: DashboardViewProps) {
   const { data: connections, isLoading: connectionsLoading } = useConnections();
-  const { orders, isLoading: ordersLoading } = useOrders();
+  const { orders, isLoading: ordersLoading } = useSaleOrders();
   const { purchaseOrders, isLoading: poLoading } = usePurchaseOrders();
   const { summary: sohSummary, hasData: hasSOHData, isLoading: sohLoading } = useSOHSummary();
 
   const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
-  const activeOrders = orders.filter(o => o.status !== "completed").length;
-  const inProgressOrders = orders.filter(o => o.status === "in_progress").length;
+  const activeOrders = orders.filter(o => !TERMINAL_STATUSES.includes(o.status)).length;
+  const packingOrders = orders.filter(o => o.status === "PACKING_IN_PROGRESS" || o.status === "AWAITING_PICK_PACK").length;
   const pendingInbound = purchaseOrders.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length;
 
   const totalUnits = hasSOHData
@@ -34,7 +36,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
     : 0;
 
   const locStats = configuredConnections.map(conn => {
-    const connOrders = orders.filter(o => o.location === conn.id);
+    const connOrders = orders.filter(o => o.connection_id === conn.id);
     const connPOs = purchaseOrders.filter(o => o.location === conn.id);
     const connUnits = hasSOHData
       ? sohSummary.reduce((s, p) => {
@@ -44,19 +46,19 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       : 0;
     return {
       ...conn,
-      activeOrders: connOrders.filter(o => o.status !== "completed").length,
+      activeOrders: connOrders.filter(o => !TERMINAL_STATUSES.includes(o.status)).length,
       totalOrders: connOrders.length,
       pendingInbound: connPOs.filter(o => !["RECEIVED", "VERIFIED", "ALLOCATED"].includes(o.status)).length,
       stockUnits: connUnits,
     };
   });
 
-  const recentOrders = [...orders].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
+  const recentOrders = orders.slice(0, 5); // already sorted by cc_created_at DESC
 
   const stats = [
     { label: "Connected Locations", value: configuredConnections.length, sub: `${(connections || []).length} total configured`, cls: "text-primary" },
     { label: "Total Units on Hand", value: totalUnits.toLocaleString(), sub: hasSOHData ? `${lowStockCount} low, ${outOfStockCount} out` : "Refresh SOH to populate", cls: "text-[hsl(142,76%,36%)]" },
-    { label: "Active Orders", value: activeOrders, sub: `${inProgressOrders} in progress`, cls: "" },
+    { label: "Active Orders", value: activeOrders, sub: `${packingOrders} in progress`, cls: "" },
     { label: "Pending Inbound", value: pendingInbound, sub: `${purchaseOrders.length} total POs`, cls: "text-[hsl(38,92%,50%)]" },
   ];
 
@@ -188,15 +190,15 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
             </div>
           ) : recentOrders.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">No orders loaded yet.</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">No orders yet. Configure webhooks to receive orders.</div>
           ) : (
             recentOrders.map((order, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted transition-colors">
                 <div className="flex items-center gap-2.5">
-                  <LocationChip locationId={order.location} />
+                  <LocationChip locationId={order.connection_id} />
                   <div>
-                    <div className="text-sm font-medium">{order.ref || order.id}</div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">{order.deliveryAddress || order.id}</div>
+                    <div className="text-sm font-medium">{order.order_number || order.cc_numeric_id || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">{order.customer_name || order.deliver_address || "—"}</div>
                   </div>
                 </div>
                 <StatusBadge status={order.status} />

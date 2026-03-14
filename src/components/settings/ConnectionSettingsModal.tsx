@@ -6,6 +6,7 @@ import { CredentialsTab } from "./tabs/CredentialsTab";
 import { AppearanceTab } from "./tabs/AppearanceTab";
 import { ProductsTab } from "./tabs/ProductsTab";
 import { SOHTab } from "./tabs/SOHTab";
+import { WebhooksTab } from "./tabs/WebhooksTab";
 
 interface ConnectionSettingsModalProps {
   open: boolean;
@@ -56,7 +57,7 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
         {/* Tabs */}
         <Tabs defaultValue="credentials" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full rounded-none border-b border-border bg-transparent h-auto p-0 px-6 justify-start">
-            {["credentials", "appearance", "products", "soh", "sales-orders", "purchase-orders"].map(tab => (
+            {["credentials", "appearance", "products", "soh", "webhooks", "purchase-orders"].map(tab => (
               <TabsTrigger
                 key={tab}
                 value={tab}
@@ -66,7 +67,7 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
                  tab === "appearance" ? "Appearance" :
                  tab === "products" ? "Products" :
                  tab === "soh" ? "Stock on Hand" :
-                 tab === "sales-orders" ? "Sales Orders" :
+                 tab === "webhooks" ? "Webhooks" :
                  "Purchase Orders"}
               </TabsTrigger>
             ))}
@@ -85,15 +86,8 @@ export function ConnectionSettingsModal({ open, onOpenChange, connection }: Conn
             <TabsContent value="soh" className="mt-0">
               <SOHTab connection={connection} />
             </TabsContent>
-            <TabsContent value="sales-orders" className="mt-0">
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <div className="text-4xl opacity-30">📦</div>
-                <div className="font-semibold">Sales Orders</div>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Configure how sale orders are fetched from this CartonCloud tenant.
-                </p>
-                <Badge variant="outline" className="text-muted-foreground">Coming soon</Badge>
-              </div>
+            <TabsContent value="webhooks" className="mt-0">
+              <WebhooksTab connection={connection} />
             </TabsContent>
             <TabsContent value="purchase-orders" className="mt-0">
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
