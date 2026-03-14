@@ -78,11 +78,6 @@ export function WebhooksTab({ connection }: WebhooksTabProps) {
 
     try {
       // Re-invoke the webhook function with the stored payload
-      const { error } = await supabase.functions.invoke("cartoncloud-webhook/" + connection.id, {
-        body: event.payload,
-        headers: { "Content-Type": "application/json" },
-      });
-      // The function constructs its URL from the request, so we use a direct fetch
       const url = `https://${projectId}.supabase.co/functions/v1/cartoncloud-webhook/${connection.id}?secret=${webhookSecret}`;
       const res = await fetch(url, {
         method: "POST",
