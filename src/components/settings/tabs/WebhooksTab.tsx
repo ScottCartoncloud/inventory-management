@@ -20,7 +20,7 @@ export function WebhooksTab({ connection }: WebhooksTabProps) {
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  const webhookSecret = (connection as any).webhook_secret as string | null;
+  const webhookSecret = connection.webhook_secret;
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const webhookUrl = webhookSecret
     ? `https://${projectId}.supabase.co/functions/v1/cartoncloud-webhook/${connection.id}?secret=${webhookSecret}`
@@ -32,7 +32,7 @@ export function WebhooksTab({ connection }: WebhooksTabProps) {
       const secret = crypto.randomUUID().replace(/-/g, "");
       const { error } = await supabase
         .from("connections")
-        .update({ webhook_secret: secret } as any)
+        .update({ webhook_secret: secret })
         .eq("id", connection.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["connections"] });
