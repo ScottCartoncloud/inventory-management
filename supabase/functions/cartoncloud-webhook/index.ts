@@ -111,7 +111,9 @@ function formatAddress(addr: Record<string, unknown> | undefined | null): string
   if (!addr) return null;
   const state = addr.state as { code?: string; name?: string } | string | undefined;
   const stateCode = typeof state === "string" ? state : state?.code || state?.name || "";
-  return [addr.address1, addr.suburb, stateCode, addr.postcode]
+  const country = addr.country as { code?: string; name?: string } | string | undefined;
+  const countryCode = typeof country === "string" ? country : country?.code || "";
+  return [addr.address1, addr.suburb, stateCode, addr.postcode, countryCode]
     .filter(Boolean)
     .join(", ") || null;
 }
