@@ -25,6 +25,8 @@ export interface Connection {
   cc_warehouse_name: string | null;
   soh_refresh_interval: string;
   soh_last_refreshed_at: string | null;
+  webhook_secret: string | null;
+  org_id: string;
 }
 
 export function useConnections() {
