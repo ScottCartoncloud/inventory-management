@@ -1,0 +1,165 @@
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
+import { LocationChip } from "@/components/LocationChip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, Cloud, Monitor } from "lucide-react";
+import type { SaleOrder } from "@/hooks/useSaleOrders";
+
+interface OrderDetailDrawerProps {
+  order: SaleOrder | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDrawerProps) {
+  if (!order) return null;
+
+  const items = order.items || [];
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+        <SheetHeader className="pb-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <SheetTitle className="text-lg">
+              {order.order_number || order.cc_numeric_id || order.cc_order_id}
+            </SheetTitle>
+            <StatusBadge status={order.status} />
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <LocationChip locationId={order.connection_id} />
+            <Badge variant="outline" className="text-xs gap-1">
+              {order.source === "cartoncloud" ? (
+                <><Cloud size={10} /> CartonCloud</>
+              ) : (
+                <><Monitor size={10} /> Portal</>
+              )}
+            </Badge>
+            {order.urgent && (
+              <Badge variant="destructive" className="text-xs">Urgent</Badge>
+            )}
+          </div>
+        </SheetHeader>
+
+        <div className="space-y-5 pt-5">
+          {/* Header fields */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="Order Number" value={order.order_number} />
+            <Field label="CC ID" value={order.cc_numeric_id} />
+            <Field label="Customer" value={order.customer_name} />
+            <Field label="Total Qty" value={order.total_qty?.toLocaleString()} />
+            <Field label="Items" value={String(order.total_items)} />
+            <Field label="Delivery Method" value={order.deliver_method} />
+          </div>
+
+          {/* Delivery Address */}
+          {order.deliver_address && (
+            <div className="text-sm">
+              <div className="text-muted-foreground text-xs font-medium mb-1">Delivery Address</div>
+              <div>{order.deliver_company && <div className="font-medium">{order.deliver_company}</div>}</div>
+              <div className="text-muted-foreground">{order.deliver_address}</div>
+            </div>
+          )}
+
+          {/* Collection Address */}
+          {order.collect_address && (
+            <div className="text-sm">
+              <div className="text-muted-foreground text-xs font-medium mb-1">Collection Address</div>
+              {order.collect_company && <div className="font-medium">{order.collect_company}</div>}
+              <div className="text-muted-foreground">{order.collect_address}</div>
+            </div>
+          )}
+
+          {/* Items */}
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-2">Items ({items.length})</div>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs">Product</TableHead>
+                    <TableHead className="text-xs text-right">Qty</TableHead>
+                    <TableHead className="text-xs">UOM</TableHead>
+                    <TableHead className="text-xs">Expiry</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-6 text-sm">
+                        No items
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="font-medium text-sm">{item.product_name || "—"}</div>
+                          {item.cc_product_code && (
+                            <div className="text-xs text-muted-foreground font-mono">{item.cc_product_code}</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-sm">
+                          {item.quantity.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {item.unit_of_measure || "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {item.expiry_date || "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Timestamps */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="Created" value={formatDate(order.cc_created_at)} />
+            <Field label="Modified" value={formatDate(order.cc_modified_at)} />
+            <Field label="Packed" value={formatDate(order.cc_packed_at)} />
+            <Field label="Dispatched" value={formatDate(order.cc_dispatched_at)} />
+          </div>
+
+          {/* Raw payload toggle */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown size={12} />
+              Raw Payload
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <pre className="mt-2 text-xs bg-muted p-3 rounded-lg overflow-auto max-h-64 text-muted-foreground">
+                {JSON.stringify(order.raw_payload, null, 2)}
+              </pre>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <div className="text-muted-foreground text-xs font-medium">{label}</div>
+      <div className="font-medium">{value || "—"}</div>
+    </div>
+  );
+}
