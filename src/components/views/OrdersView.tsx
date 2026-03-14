@@ -123,8 +123,8 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
               <TableRow className="bg-muted">
                 <TableHead>Order</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Delivery Address</TableHead>
                 <TableHead>Items</TableHead>
-                <TableHead>Deliver To</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Created</TableHead>
@@ -150,12 +150,10 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                     <div className="text-xs text-muted-foreground font-mono">{order.cc_numeric_id || order.cc_order_id?.substring(0, 8)}</div>
                   </TableCell>
                   <TableCell>{order.customer_name || "—"}</TableCell>
-                  <TableCell className="text-[0.8125rem] max-w-[200px] truncate" title={getItemsSummary(order)}>
-                    {getItemsSummary(order)}
-                  </TableCell>
                   <TableCell className="text-[0.8125rem] max-w-[250px] truncate" title={order.deliver_address || ""}>
-                    {order.deliver_company || order.deliver_address || "—"}
+                    {order.deliver_address || "—"}
                   </TableCell>
+                  <TableCell className="text-center">{order.total_items}</TableCell>
                   <TableCell className="text-right font-semibold">{order.total_qty.toLocaleString()}</TableCell>
                   <TableCell><LocationChip locationId={order.connection_id} /></TableCell>
                   <TableCell className="text-muted-foreground text-[0.8125rem]">{formatDate(order.cc_created_at)}</TableCell>
