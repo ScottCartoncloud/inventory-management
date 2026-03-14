@@ -32,7 +32,7 @@ export function WebhooksTab({ connection }: WebhooksTabProps) {
       const secret = crypto.randomUUID().replace(/-/g, "");
       const { error } = await supabase
         .from("connections")
-        .update({ webhook_secret: secret } as any)
+        .update({ webhook_secret: secret })
         .eq("id", connection.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["connections"] });
