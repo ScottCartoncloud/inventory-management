@@ -372,7 +372,6 @@ async function processOutboundOrder(
   if (items.length > 0) {
     await supabase.from("sale_order_items").delete().eq("sale_order_id", order.id);
 
-  if (items.length > 0) {
     const productCodes = items
       .map((item) => {
         const d = item.details as Record<string, unknown> | undefined;
