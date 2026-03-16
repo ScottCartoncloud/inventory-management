@@ -184,34 +184,62 @@ Deno.serve(async (req) => {
     const ccTimestamps = ccOrder.timestamps as Record<string, { time?: string }> | undefined;
     const ccItems = (ccOrder.items || []) as Array<Record<string, unknown>>;
 
-    // Save to sale_orders
-    const { data: savedOrder, error: saveError } = await supabase
+    // Save to sale_orders — use upsert to handle race condition where
+    // the webhook may have already created this record before we save it
+    const orderRow = {
+      connection_id: connectionId,
+      org_id: connection.org_id,
+      cc_order_id: String(ccOrder.id),
+      cc_version: Number(ccOrder.version) || null,
+      order_number: order.reference,
+      source: "portal",
+      status: String(ccOrder.status || "AWAITING_PICK_PACK"),
+      customer_name: addr.companyName || null,
+      deliver_company: addr.companyName || null,
+      deliver_address: deliverAddressStr,
+      deliver_method: order.deliverMethod || "SHIPPING",
+      urgent: order.urgent || false,
+      allow_splitting: order.allowSplitting ?? true,
+      invoice_amount: order.invoiceValue || 0,
+      invoice_currency: "AUD",
+      total_qty: totalQty,
+      total_items: order.items.length,
+      cc_created_at: ccTimestamps?.created?.time
+        ? new Date(ccTimestamps.created.time).toISOString()
+        : new Date().toISOString(),
+      raw_payload: ccOrder,
+    };
+
+    // First try: check if webhook already created this order
+    const { data: existingOrder } = await supabase
       .from("sale_orders")
-      .insert({
-        connection_id: connectionId,
-        org_id: connection.org_id,
-        cc_order_id: String(ccOrder.id),
-        cc_version: Number(ccOrder.version) || null,
-        order_number: order.reference,
-        source: "portal",
-        status: String(ccOrder.status || "AWAITING_PICK_PACK"),
-        customer_name: addr.companyName || null,
-        deliver_company: addr.companyName || null,
-        deliver_address: deliverAddressStr,
-        deliver_method: order.deliverMethod || "SHIPPING",
-        urgent: order.urgent || false,
-        allow_splitting: order.allowSplitting ?? true,
-        invoice_amount: order.invoiceValue || 0,
-        invoice_currency: "AUD",
-        total_qty: totalQty,
-        total_items: order.items.length,
-        cc_created_at: ccTimestamps?.created?.time
-          ? new Date(ccTimestamps.created.time).toISOString()
-          : new Date().toISOString(),
-        raw_payload: ccOrder,
-      })
-      .select()
-      .single();
+      .select("id")
+      .eq("connection_id", connectionId)
+      .eq("cc_order_id", String(ccOrder.id))
+      .maybeSingle();
+
+    let savedOrder: { id: string } | null = null;
+    let saveError: unknown = null;
+
+    if (existingOrder) {
+      // Webhook beat us — update it and claim as portal
+      const { data, error } = await supabase
+        .from("sale_orders")
+        .update(orderRow)
+        .eq("id", existingOrder.id)
+        .select()
+        .single();
+      savedOrder = data;
+      saveError = error;
+    } else {
+      const { data, error } = await supabase
+        .from("sale_orders")
+        .insert(orderRow)
+        .select()
+        .single();
+      savedOrder = data;
+      saveError = error;
+    }
 
     if (saveError) {
       console.error("Failed to save order locally:", saveError);
