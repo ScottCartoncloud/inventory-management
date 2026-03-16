@@ -136,7 +136,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   <div className="text-4xl mb-3 opacity-30">📋</div>
                   <div className="font-semibold mb-1">No orders found</div>
                   <div className="text-sm">Try adjusting your filters</div>
