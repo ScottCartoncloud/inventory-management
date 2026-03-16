@@ -128,6 +128,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                 <TableHead>Items</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Dispatched</TableHead>
                 <TableHead>Status</TableHead>
