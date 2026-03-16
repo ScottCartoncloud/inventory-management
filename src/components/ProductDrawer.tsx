@@ -208,9 +208,6 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
                 </FieldGroup>
               </TabsContent>
 
-              <TabsContent value="mappings" className="mt-0">
-                <ProductMappingsTab product={product} />
-              </TabsContent>
             </div>
           </Tabs>
 

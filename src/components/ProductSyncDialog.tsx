@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, AlertTriangle, Package, Download } from "lucide-react";
+import { Loader2, Package, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, useCreateProduct, useBulkUpsertMappings, type DBProduct } from "@/hooks/useProducts";
 import type { Connection } from "@/hooks/useConnections";
 import { toast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CCProduct {
   id: string;
@@ -28,187 +27,145 @@ interface ProductSyncDialogProps {
   connection: Connection;
 }
 
-type SyncState = "idle" | "fetching" | "reconciling" | "saving";
-
-interface ReconciliationResult {
-  matched: { ccProduct: CCProduct; portalProduct: DBProduct }[];
-  unmatchedInCC: CCProduct[];
-  unmatchedInPortal: DBProduct[];
-}
-
 export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyncDialogProps) {
   const { data: products = [] } = useProducts();
   const createProduct = useCreateProduct();
   const bulkUpsertMappings = useBulkUpsertMappings();
+  const queryClient = useQueryClient();
 
-  const [state, setState] = useState<SyncState>("idle");
-  const [reconciliation, setReconciliation] = useState<ReconciliationResult | null>(null);
-  const [selectedImports, setSelectedImports] = useState<Set<string>>(new Set());
-  const [isSaving, setIsSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<{ matched: number; created: number } | null>(null);
 
   async function fetchAllCCProducts(): Promise<CCProduct[]> {
     const allProducts: CCProduct[] = [];
     let page = 1;
-    let totalPages = 1;
 
-    while (page <= totalPages) {
+    while (true) {
       const { data, error } = await supabase.functions.invoke("cartoncloud-proxy", {
         body: { connectionId: connection.id, path: `products?page=${page}&size=50` },
       });
       if (error) throw error;
-
-      // The proxy forwards Total-Pages header but functions.invoke doesn't give us headers easily
-      // So we parse the data directly - if it's an array, use it
       const items = Array.isArray(data) ? data : [];
       allProducts.push(...items);
-
-      // If we got fewer than 50, we're done
-      if (items.length < 50) break;
+      if (items.length < 50 || page >= 100) break;
       page++;
-      // Safety limit
-      if (page > 100) break;
     }
 
     return allProducts;
   }
 
   async function handleSync() {
-    setState("fetching");
+    setSyncing(true);
+    setResult(null);
+
     try {
       const ccProducts = await fetchAllCCProducts();
-      setState("reconciling");
 
-      // Build lookup by code (SKU)
+      // Build lookup by SKU (references.code)
       const portalBySku = new Map<string, DBProduct>();
       for (const p of products) {
         portalBySku.set(p.sku.toLowerCase(), p);
       }
 
-      const matched: ReconciliationResult["matched"] = [];
-      const unmatchedInCC: CCProduct[] = [];
-      const matchedCCCodes = new Set<string>();
+      let matched = 0;
+      let created = 0;
+      const allMappings: {
+        product_id: string;
+        connection_id: string;
+        cc_product_code: string;
+        cc_product_id: string | null;
+        is_override: boolean;
+      }[] = [];
 
       for (const cc of ccProducts) {
-        const portal = portalBySku.get(cc.code.toLowerCase());
+        const ccCode = cc.code || "";
+        const portal = portalBySku.get(ccCode.toLowerCase());
+
         if (portal) {
-          matched.push({ ccProduct: cc, portalProduct: portal });
-          matchedCCCodes.add(portal.sku.toLowerCase());
+          // Match found
+          allMappings.push({
+            product_id: portal.id,
+            connection_id: connection.id,
+            cc_product_code: ccCode,
+            cc_product_id: cc.id,
+            is_override: false,
+          });
+          matched++;
         } else {
-          unmatchedInCC.push(cc);
+          // No match — create new product
+          const uoms = (cc.unitsOfMeasure || []).map((u, i) => ({
+            name: u.name,
+            qty: u.quantity,
+            sort_order: i,
+          }));
+
+          const newProduct = await createProduct.mutateAsync({
+            product: {
+              sku: ccCode,
+              name: cc.name || ccCode,
+              category: "General",
+              unit: "CTN",
+              min_qty: 0,
+              barcode: cc.barcode || null,
+              supplier: null,
+              cost_price: 0,
+              sell_price: 0,
+              tax_rate: 10,
+              weight: cc.weight || null,
+              weight_unit: "kg",
+              length: cc.length ? cc.length * 100 : null,
+              width: cc.width ? cc.width * 100 : null,
+              height: cc.height ? cc.height * 100 : null,
+              dim_unit: "cm",
+              notes: cc.description || null,
+            },
+            uoms,
+          });
+
+          allMappings.push({
+            product_id: newProduct.id,
+            connection_id: connection.id,
+            cc_product_code: ccCode,
+            cc_product_id: cc.id,
+            is_override: false,
+          });
+          created++;
         }
       }
 
-      const unmatchedInPortal = products.filter(p => !matchedCCCodes.has(p.sku.toLowerCase()));
-
-      setReconciliation({ matched, unmatchedInCC, unmatchedInPortal });
-      setState("idle");
-    } catch (err: any) {
-      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
-      setState("idle");
-    }
-  }
-
-  function toggleImport(ccId: string) {
-    setSelectedImports(prev => {
-      const next = new Set(prev);
-      if (next.has(ccId)) next.delete(ccId);
-      else next.add(ccId);
-      return next;
-    });
-  }
-
-  function selectAllImports() {
-    if (!reconciliation) return;
-    if (selectedImports.size === reconciliation.unmatchedInCC.length) {
-      setSelectedImports(new Set());
-    } else {
-      setSelectedImports(new Set(reconciliation.unmatchedInCC.map(p => p.id)));
-    }
-  }
-
-  async function handleConfirm() {
-    if (!reconciliation) return;
-    setIsSaving(true);
-
-    try {
-      // 1. Create auto-matched mapping rows
-      const matchedMappings = reconciliation.matched.map(m => ({
-        product_id: m.portalProduct.id,
-        connection_id: connection.id,
-        cc_product_code: m.ccProduct.code,
-        cc_product_id: m.ccProduct.id,
-        is_override: false,
-      }));
-
-      // 2. Import selected unmatched CC products
-      const importedMappings: typeof matchedMappings = [];
-      for (const ccId of selectedImports) {
-        const cc = reconciliation.unmatchedInCC.find(p => p.id === ccId);
-        if (!cc) continue;
-
-        // Convert CC dimensions from metres to cm
-        const uoms = (cc.unitsOfMeasure || []).map((u, i) => ({
-          name: u.name,
-          qty: u.quantity,
-          sort_order: i,
-        }));
-
-        const newProduct = await createProduct.mutateAsync({
-          product: {
-            sku: cc.code,
-            name: cc.name || cc.code,
-            category: "General",
-            unit: "CTN",
-            min_qty: 0,
-            barcode: cc.barcode || null,
-            supplier: null,
-            cost_price: 0,
-            sell_price: 0,
-            tax_rate: 10,
-            weight: cc.weight || null,
-            weight_unit: "kg",
-            length: cc.length ? cc.length * 100 : null, // metres to cm
-            width: cc.width ? cc.width * 100 : null,
-            height: cc.height ? cc.height * 100 : null,
-            dim_unit: "cm",
-            notes: cc.description || null,
-          },
-          uoms,
-        });
-
-        importedMappings.push({
-          product_id: newProduct.id,
-          connection_id: connection.id,
-          cc_product_code: cc.code,
-          cc_product_id: cc.id,
-          is_override: false,
-        });
-      }
-
-      // 3. Bulk upsert all mappings
-      const allMappings = [...matchedMappings, ...importedMappings];
+      // Bulk upsert all mappings
       if (allMappings.length > 0) {
         await bulkUpsertMappings.mutateAsync(allMappings);
       }
 
+      // Update connection sync stats
+      await supabase
+        .from("connections")
+        .update({
+          product_last_synced_at: new Date().toISOString(),
+          product_last_sync_matched: matched,
+          product_last_sync_unmatched_cc: created,
+          product_last_sync_unmatched_portal: 0,
+        })
+        .eq("id", connection.id);
+
+      queryClient.invalidateQueries({ queryKey: ["connections"] });
+
+      setResult({ matched, created });
       toast({
         title: "Sync complete",
-        description: `${matchedMappings.length} matched, ${importedMappings.length} imported.`,
+        description: `${matched} matched, ${created} new products created.`,
       });
-      onOpenChange(false);
-      setReconciliation(null);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
     } finally {
-      setIsSaving(false);
+      setSyncing(false);
     }
   }
 
-  const isFetching = state === "fetching" || state === "reconciling";
-
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!isFetching && !isSaving) { onOpenChange(v); if (!v) setReconciliation(null); } }}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+    <Dialog open={open} onOpenChange={(v) => { if (!syncing) { onOpenChange(v); if (!v) setResult(null); } }}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package size={18} />
@@ -216,88 +173,38 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
           </DialogTitle>
         </DialogHeader>
 
-        {!reconciliation ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-              This will fetch all products from <strong>{connection.name}</strong> and compare them against the portal product catalog by SKU code.
-            </p>
-            <Button onClick={handleSync} disabled={isFetching} size="lg">
-              {isFetching ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  {state === "fetching" ? "Fetching products…" : "Reconciling…"}
-                </>
-              ) : (
-                <>
-                  <Download size={16} /> Start Sync
-                </>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-hidden flex flex-col gap-4">
-            {/* Matched */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(142,76%,36%)]/10 rounded-md">
-              <CheckCircle size={16} className="text-[hsl(142,76%,36%)]" />
-              <span className="text-sm font-medium">{reconciliation.matched.length} matched</span>
-              <span className="text-xs text-muted-foreground">— auto-mapped by SKU</span>
-            </div>
-
-            {/* Unmatched in CC */}
-            {reconciliation.unmatchedInCC.length > 0 && (
-              <div className="flex-1 min-h-0 flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={14} className="text-[hsl(38,92%,50%)]" />
-                    <span className="text-sm font-medium">{reconciliation.unmatchedInCC.length} in CartonCloud, not in Portal</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={selectAllImports}>
-                    {selectedImports.size === reconciliation.unmatchedInCC.length ? "Deselect All" : "Select All"}
-                  </Button>
-                </div>
-                <ScrollArea className="flex-1 border border-border rounded-md max-h-[30vh]">
-                  {reconciliation.unmatchedInCC.map(cc => (
-                    <div key={cc.id} className="flex items-center gap-3 px-3 py-2 border-b border-border last:border-b-0 hover:bg-muted">
-                      <Checkbox
-                        checked={selectedImports.has(cc.id)}
-                        onCheckedChange={() => toggleImport(cc.id)}
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{cc.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono">{cc.code}</div>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Import</span>
-                    </div>
-                  ))}
-                </ScrollArea>
-              </div>
-            )}
-
-            {/* Unmatched in Portal */}
-            {reconciliation.unmatchedInPortal.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground">{reconciliation.unmatchedInPortal.length} portal products not in this tenant</span>
-                </div>
-                <div className="text-xs text-muted-foreground bg-muted rounded-md px-3 py-2">
-                  These products won't have SOH data from {connection.name}. No action needed.
+        <div className="flex flex-col items-center justify-center py-8 gap-4">
+          {result ? (
+            <>
+              <CheckCircle size={36} className="text-[hsl(142,76%,36%)]" />
+              <div className="text-center">
+                <div className="font-semibold text-sm mb-1">Sync Complete</div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{result.matched}</span> matched · <span className="font-medium text-foreground">{result.created}</span> new products created
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {reconciliation && (
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setReconciliation(null); }} disabled={isSaving}>
-              Back
-            </Button>
-            <Button onClick={handleConfirm} disabled={isSaving}>
-              {isSaving && <Loader2 size={14} className="animate-spin" />}
-              Confirm & Save ({reconciliation.matched.length + selectedImports.size} mappings)
-            </Button>
-          </DialogFooter>
-        )}
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                Done
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground text-center max-w-sm">
+                Fetch all products from <strong>{connection.name}</strong>, match by SKU, and auto-create any new products.
+              </p>
+              <Button onClick={handleSync} disabled={syncing} size="lg">
+                {syncing ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Syncing…
+                  </>
+                ) : (
+                  "Sync Now"
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
