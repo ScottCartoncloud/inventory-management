@@ -263,53 +263,98 @@ async function processOutboundOrder(
 
   const deliverMethod = deliver?.method as Record<string, unknown> | undefined;
 
-  // Check if order already exists to preserve source field
-  const { data: existingOrder } = await supabase
+  const referenceCustomer = references?.customer ? String(references.customer) : null;
+
+  const baseOrderData = {
+    connection_id: connection.id,
+    org_id: connection.org_id,
+    cc_order_id: String(payload.id),
+    cc_version: Number(payload.version) || null,
+    order_number: referenceCustomer,
+    cc_numeric_id: references?.numericId ? String(references.numericId) : null,
+    status: String(payload.status || "UNKNOWN"),
+    customer_name: (deliverAddr?.companyName || customer?.name || null) as string | null,
+    deliver_company: (deliverAddr?.companyName || null) as string | null,
+    deliver_address: formatAddress(deliverAddr),
+    deliver_method: (deliverMethod?.type || null) as string | null,
+    collect_company: (collectAddr?.companyName || null) as string | null,
+    collect_address: formatAddress(collectAddr),
+    urgent: Boolean((details as Record<string, unknown>)?.urgent) || false,
+    allow_splitting: (details as Record<string, unknown>)?.allowSplitting != null
+      ? Boolean((details as Record<string, unknown>)?.allowSplitting)
+      : true,
+    invoice_amount: null,
+    invoice_currency: "AUD",
+    total_qty: totalQty,
+    total_items: items.length,
+    cc_created_at: parseTime(timestamps?.created),
+    cc_modified_at: parseTime(timestamps?.modified),
+    cc_dispatched_at: parseTime(timestamps?.dispatched),
+    cc_packed_at: parseTime(timestamps?.packed),
+    raw_payload: payload,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: existingByCcId } = await supabase
     .from("sale_orders")
     .select("id, source")
     .eq("connection_id", connection.id)
     .eq("cc_order_id", String(payload.id))
-    .single();
+    .maybeSingle();
 
-  const { data: order, error: orderError } = await supabase
-    .from("sale_orders")
-    .upsert(
-      {
-        connection_id: connection.id,
-        org_id: connection.org_id,
-        cc_order_id: String(payload.id),
-        cc_version: Number(payload.version) || null,
-        order_number: references?.customer ? String(references.customer) : null,
-        cc_numeric_id: references?.numericId ? String(references.numericId) : null,
-        source: existingOrder?.source || "cartoncloud",
-        status: String(payload.status || "UNKNOWN"),
-        customer_name: (deliverAddr?.companyName || customer?.name || null) as string | null,
-        deliver_company: (deliverAddr?.companyName || null) as string | null,
-        deliver_address: formatAddress(deliverAddr),
-        deliver_method: (deliverMethod?.type || null) as string | null,
-        collect_company: (collectAddr?.companyName || null) as string | null,
-        collect_address: formatAddress(collectAddr),
-        urgent: Boolean((details as Record<string, unknown>)?.urgent) || false,
-        allow_splitting: (details as Record<string, unknown>)?.allowSplitting != null
-          ? Boolean((details as Record<string, unknown>)?.allowSplitting)
-          : true,
-        invoice_amount: null,
-        invoice_currency: "AUD",
-        total_qty: totalQty,
-        total_items: items.length,
-        cc_created_at: parseTime(timestamps?.created),
-        cc_modified_at: parseTime(timestamps?.modified),
-        cc_dispatched_at: parseTime(timestamps?.dispatched),
-        cc_packed_at: parseTime(timestamps?.packed),
-        raw_payload: payload,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "connection_id,cc_order_id" }
-    )
-    .select()
-    .single();
+  let order: { id: string } | null = null;
 
-  if (orderError) throw orderError;
+  if (existingByCcId?.id) {
+    const { data: updatedByCcId, error: updatedByCcIdError } = await supabase
+      .from("sale_orders")
+      .update({ ...baseOrderData, source: existingByCcId.source || "cartoncloud" })
+      .eq("id", existingByCcId.id)
+      .select("id")
+      .single();
+
+    if (updatedByCcIdError) throw updatedByCcIdError;
+    order = updatedByCcId;
+  } else {
+    const { data: existingPortalByRef } = referenceCustomer
+      ? await supabase
+          .from("sale_orders")
+          .select("id")
+          .eq("connection_id", connection.id)
+          .eq("order_number", referenceCustomer)
+          .eq("source", "portal")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+
+    if (existingPortalByRef?.id) {
+      const { data: updatedPortal, error: updatedPortalError } = await supabase
+        .from("sale_orders")
+        .update({ ...baseOrderData, source: "portal" })
+        .eq("id", existingPortalByRef.id)
+        .select("id")
+        .single();
+
+      if (updatedPortalError) throw updatedPortalError;
+      order = updatedPortal;
+    } else {
+      const { data: inserted, error: insertedError } = await supabase
+        .from("sale_orders")
+        .upsert(
+          { ...baseOrderData, source: "cartoncloud" },
+          { onConflict: "connection_id,cc_order_id" }
+        )
+        .select("id")
+        .single();
+
+      if (insertedError) throw insertedError;
+      order = inserted;
+    }
+  }
+
+  if (!order?.id) {
+    throw new Error("Failed to upsert sale order");
+  }
 
   // Extract and upsert addresses
   const deliverAddrData = deliverAddr ? extractAddressData(deliverAddr, "delivery") : null;
