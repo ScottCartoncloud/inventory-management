@@ -1,4 +1,3 @@
-// TODO: Replace hardcoded PRODUCTS with live CartonCloud SOH queries when ready
 import { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +9,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
-import { PRODUCTS } from "@/data/products";
-import { getSOH } from "@/data/inventory-utils";
+import { useProducts, type DBProduct } from "@/hooks/useProducts";
+import { useStockOnHand, type StockOnHandRow } from "@/hooks/useStockOnHand";
 import { LocationChip } from "@/components/LocationChip";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X } from "lucide-react";
+import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface CreateOrderViewProps {
@@ -24,16 +23,25 @@ interface CreateOrderViewProps {
 const CATEGORIES = ["All Categories", "General"];
 const PAGE_SIZE = 10;
 
+/** Get available SOH qty for a product at a specific connection */
+function getAvailableSOH(sohRows: StockOnHandRow[], productId: string, connectionId: string): number {
+  return sohRows
+    .filter(r => r.product_id === productId && r.connection_id === connectionId && (r.product_status === "AVAILABLE" || r.product_status === "OK"))
+    .reduce((sum, r) => sum + r.qty, 0);
+}
+
 export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const { data: connections } = useConnections();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: sohRows = [], isLoading: sohLoading } = useStockOnHand();
   const configuredConnections = (connections || []).filter(c => c.is_active && isConnectionConfigured(c));
+
   // Order details
   const [selectedLocation, setSelectedLocation] = useState("");
   const [customerRef, setCustomerRef] = useState("");
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
-
 
   // Line items
   const [lineSearch, setLineSearch] = useState("");
@@ -50,16 +58,22 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Unique categories from real products
+  const allCategories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category));
+    return ["All Categories", ...Array.from(cats).sort()];
+  }, [products]);
+
   // Products filtered by location stock > 0
   const availableProducts = useMemo(() => {
     if (!selectedLocation) return [];
-    return PRODUCTS.filter(p => getSOH(p, selectedLocation) > 0);
-  }, [selectedLocation]);
+    return products.filter(p => getAvailableSOH(sohRows, p.id, selectedLocation) > 0);
+  }, [selectedLocation, products, sohRows]);
 
   // Filtered + sorted products
   const filteredProducts = useMemo(() => {
     let list = availableProducts.filter(p => {
-      const matchSearch = !lineSearch || [p.name, p.sku, p.barcode].some(v => v.toLowerCase().includes(lineSearch.toLowerCase()));
+      const matchSearch = !lineSearch || [p.name, p.sku, p.barcode || ""].some(v => v.toLowerCase().includes(lineSearch.toLowerCase()));
       const matchCat = categoryFilter === "All Categories" || p.category === categoryFilter;
       return matchSearch && matchCat;
     });
@@ -68,12 +82,12 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
       let cmp = 0;
       if (sortCol === "name") cmp = a.name.localeCompare(b.name);
       else if (sortCol === "category") cmp = a.category.localeCompare(b.category);
-      else cmp = getSOH(a, selectedLocation) - getSOH(b, selectedLocation);
+      else cmp = getAvailableSOH(sohRows, a.id, selectedLocation) - getAvailableSOH(sohRows, b.id, selectedLocation);
       return sortDir === "asc" ? cmp : -cmp;
     });
 
     return list;
-  }, [availableProducts, lineSearch, categoryFilter, sortCol, sortDir, selectedLocation]);
+  }, [availableProducts, lineSearch, categoryFilter, sortCol, sortDir, selectedLocation, sohRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const pagedProducts = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -83,6 +97,8 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const totalItems = selectedItems.length;
   const totalUnits = selectedItems.reduce((sum, [, q]) => sum + q, 0);
   const canSubmit = totalItems > 0;
+
+  const isLoading = productsLoading || sohLoading;
 
   function handleLocationChange(loc: string) {
     if (selectedLocation && totalItems > 0) {
@@ -250,6 +266,11 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                 <div className="font-semibold mb-1">Select a location above</div>
                 <div className="text-sm">to see available products</div>
               </div>
+            ) : isLoading ? (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 size={18} className="animate-spin" />
+                <span className="text-sm">Loading products…</span>
+              </div>
             ) : (
               <>
                 {/* Toolbar */}
@@ -264,7 +285,7 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -301,12 +322,17 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                     <TableBody>
                       {pagedProducts.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No products match your search</TableCell>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            {availableProducts.length === 0
+                              ? "No products with available stock at this location. Refresh SOH from the Inventory view."
+                              : "No products match your search"}
+                          </TableCell>
                         </TableRow>
                       ) : pagedProducts.map(product => {
                         const qty = quantities[product.id] || 0;
-                        const soh = getSOH(product, selectedLocation);
-                        const selectedUom = uomSelections[product.id] || product.uoms[0]?.name || product.unit;
+                        const soh = getAvailableSOH(sohRows, product.id, selectedLocation);
+                        const uoms = product.product_uoms || [];
+                        const selectedUom = uomSelections[product.id] || uoms[0]?.name || product.unit;
                         return (
                           <TableRow key={product.id} className={qty > 0 ? "bg-primary/5" : ""}>
                             <TableCell>
@@ -320,16 +346,20 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                             </TableCell>
                             <TableCell className="text-right font-semibold">{soh.toLocaleString()}</TableCell>
                             <TableCell>
-                              <Select value={selectedUom} onValueChange={v => handleUomChange(product.id, v)}>
-                                <SelectTrigger className="h-8 w-28 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {product.uoms.map(u => (
-                                    <SelectItem key={u.name} value={u.name}>{u.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              {uoms.length > 0 ? (
+                                <Select value={selectedUom} onValueChange={v => handleUomChange(product.id, v)}>
+                                  <SelectTrigger className="h-8 w-28 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {uoms.map(u => (
+                                      <SelectItem key={u.name} value={u.name}>{u.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{product.unit}</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Input
