@@ -223,6 +223,12 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                   </div>
                 </div>
 
+                {/* Delivery Address */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Delivery Address</label>
+                  <AddressPicker value={deliveryAddress} onChange={setDeliveryAddress} placeholder="Search delivery address…" />
+                </div>
+
                 {/* Notes */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Notes & Instructions</label>
