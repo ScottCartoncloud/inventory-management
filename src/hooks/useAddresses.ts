@@ -92,13 +92,14 @@ export function useSaveAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (address: Partial<Address> & { address1: string }) => {
+      const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = address as any;
       const { data, error } = await supabase
         .from("addresses")
-        .insert({
-          ...address,
+        .insert([{
+          ...rest,
           use_count: 1,
           last_used_at: new Date().toISOString(),
-        })
+        }])
         .select()
         .single();
       if (error) throw error;
