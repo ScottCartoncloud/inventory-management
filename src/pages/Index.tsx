@@ -5,6 +5,7 @@ import { InventoryView } from "@/components/views/InventoryView";
 import { OrdersView } from "@/components/views/OrdersView";
 import { PurchaseOrdersView } from "@/components/views/PurchaseOrdersView";
 import { ProductsView } from "@/components/views/ProductsView";
+import { AddressesView } from "@/components/views/AddressesView";
 import { SettingsView } from "@/components/views/SettingsView";
 
 const Index = () => {
