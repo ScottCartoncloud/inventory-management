@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.cartoncloud-webhook]
 verify_jwt = false
+
+[functions.google-places-search]
+verify_jwt = false

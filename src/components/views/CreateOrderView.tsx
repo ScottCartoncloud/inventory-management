@@ -40,6 +40,7 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [customerRef, setCustomerRef] = useState("");
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
+  const [deliveryAddress, setDeliveryAddress] = useState<SelectedAddress | null>(null);
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
 
