@@ -196,12 +196,14 @@ export function AddressPicker({ value, onChange, placeholder = "Search addresses
     // Save to DB
     saveAddress.mutate({
       company_name: addr.company_name,
+      contact_name: manual.contact_name || null,
       address1: addr.address1,
       address2: addr.address2,
       suburb: addr.suburb,
       state_code: addr.state_code,
       postcode: addr.postcode,
       country_code: addr.country_code,
+      country_name: manual.country_name || null,
       source: "manual",
       address_type: "delivery",
     });
