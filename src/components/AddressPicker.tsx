@@ -117,6 +117,7 @@ export function AddressPicker({ value, onChange, placeholder = "Search addresses
     onChange({
       id: addr.id,
       company_name: addr.company_name,
+      contact_name: addr.contact_name,
       address1: addr.address1,
       address2: addr.address2,
       suburb: addr.suburb,
