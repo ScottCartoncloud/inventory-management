@@ -158,6 +158,15 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                   <TableCell className="text-center">{order.total_items}</TableCell>
                   <TableCell className="text-right font-semibold">{order.total_qty.toLocaleString()}</TableCell>
                   <TableCell><LocationChip locationId={order.connection_id} /></TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs gap-1">
+                      {order.source === "portal" ? (
+                        <><Monitor size={10} /> Portal</>
+                      ) : (
+                        <><Cloud size={10} /> CC</>
+                      )}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-[0.8125rem]">{formatDate(order.cc_created_at)}</TableCell>
                   <TableCell className="text-muted-foreground text-[0.8125rem]">{formatDate(order.cc_dispatched_at)}</TableCell>
                   <TableCell><StatusBadge status={order.status} /></TableCell>
