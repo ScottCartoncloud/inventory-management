@@ -54,12 +54,14 @@ export function AddressPicker({ value, onChange, placeholder = "Search addresses
   // Manual entry fields
   const [manual, setManual] = useState({
     company_name: "",
+    contact_name: "",
     address1: "",
     address2: "",
     suburb: "",
     state_code: "",
     postcode: "",
     country_code: "AU",
+    country_name: "Australia",
   });
 
   const { data: savedResults = [] } = useSearchAddresses(query);
