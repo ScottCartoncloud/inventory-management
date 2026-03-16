@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.cartoncloud-soh]
 verify_jwt = false
+
+[functions.cartoncloud-webhook]
+verify_jwt = false
