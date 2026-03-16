@@ -12,6 +12,7 @@ import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import { useProducts, type DBProduct } from "@/hooks/useProducts";
 import { useStockOnHand, type StockOnHandRow } from "@/hooks/useStockOnHand";
 import { LocationChip } from "@/components/LocationChip";
+import { AddressPicker, type SelectedAddress } from "@/components/AddressPicker";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
