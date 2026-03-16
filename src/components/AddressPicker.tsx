@@ -246,12 +246,17 @@ export function AddressPicker({ value, onChange, placeholder = "Search addresses
           </button>
         </div>
         <Input placeholder="Company name" value={manual.company_name} onChange={e => setManual(p => ({ ...p, company_name: e.target.value }))} className="h-8 text-sm" />
+        <Input placeholder="Contact name" value={manual.contact_name} onChange={e => setManual(p => ({ ...p, contact_name: e.target.value }))} className="h-8 text-sm" />
         <Input placeholder="Address line 1 *" value={manual.address1} onChange={e => setManual(p => ({ ...p, address1: e.target.value }))} className="h-8 text-sm" />
         <Input placeholder="Address line 2" value={manual.address2} onChange={e => setManual(p => ({ ...p, address2: e.target.value }))} className="h-8 text-sm" />
         <div className="grid grid-cols-3 gap-2">
           <Input placeholder="Suburb" value={manual.suburb} onChange={e => setManual(p => ({ ...p, suburb: e.target.value }))} className="h-8 text-sm" />
           <Input placeholder="State" value={manual.state_code} onChange={e => setManual(p => ({ ...p, state_code: e.target.value }))} className="h-8 text-sm" />
           <Input placeholder="Postcode" value={manual.postcode} onChange={e => setManual(p => ({ ...p, postcode: e.target.value }))} className="h-8 text-sm" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Input placeholder="Country name" value={manual.country_name} onChange={e => setManual(p => ({ ...p, country_name: e.target.value }))} className="h-8 text-sm" />
+          <Input placeholder="Country code (e.g. AU)" value={manual.country_code} onChange={e => setManual(p => ({ ...p, country_code: e.target.value }))} className="h-8 text-sm" />
         </div>
         <div className="flex justify-end">
           <Button size="sm" disabled={!manual.address1} onClick={handleManualSave}>Use this address</Button>
