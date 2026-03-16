@@ -1,4 +1,4 @@
-import { Home, Package, ClipboardCheck, PackageOpen, Briefcase, Settings, ChevronDown, LogOut, Boxes } from "lucide-react";
+import { Home, Package, ClipboardCheck, PackageOpen, Briefcase, Settings, ChevronDown, LogOut, Boxes, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { id: "orders", label: "Orders", icon: ClipboardCheck },
   { id: "purchase-orders", label: "Purchase Orders", icon: PackageOpen },
   { id: "products", label: "Products", icon: Briefcase },
+  { id: "addresses", label: "Addresses", icon: MapPin },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

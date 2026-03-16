@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Extract connection_id from URL path
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/");
     const connectionId = pathParts[pathParts.length - 1];
@@ -30,7 +29,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate connection and secret
     const { data: connection, error: connError } = await supabase
       .from("connections")
       .select("id, org_id, webhook_secret, name")
@@ -51,11 +49,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse payload
     const payload = await req.json();
     const eventType = payload.type || payload.status || "UNKNOWN";
 
-    // Store raw event
     const { data: event, error: eventError } = await supabase
       .from("webhook_events")
       .insert({
@@ -73,7 +69,6 @@ Deno.serve(async (req) => {
       console.error("Failed to store webhook event:", eventError);
     }
 
-    // Process the order
     try {
       await processOutboundOrder(supabase, connection, payload);
 
@@ -93,7 +88,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Always return 200 so CC doesn't retry
     return new Response(
       JSON.stringify({ received: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -122,12 +116,131 @@ function parseTime(ts: { time?: string } | undefined | null): string | null {
   return ts?.time ? new Date(ts.time).toISOString() : null;
 }
 
+// --- Address upsert logic ---
+
+interface AddressData {
+  company_name: string | null;
+  address1: string;
+  address2?: string | null;
+  suburb?: string | null;
+  city?: string | null;
+  state_name?: string | null;
+  state_code?: string | null;
+  postcode?: string | null;
+  country_name?: string | null;
+  country_code?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  phone?: string | null;
+  cc_address_id?: string | null;
+  source: string;
+  address_type: string;
+}
+
+async function upsertAddress(
+  supabase: ReturnType<typeof createClient>,
+  orgId: string,
+  data: AddressData
+) {
+  try {
+    // Try match by cc_address_id first
+    if (data.cc_address_id) {
+      const { data: existing } = await supabase
+        .from("addresses")
+        .select("id, use_count")
+        .eq("org_id", orgId)
+        .eq("cc_address_id", data.cc_address_id)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("addresses")
+          .update({
+            ...data,
+            org_id: orgId,
+            use_count: (existing.use_count || 0) + 1,
+            last_used_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        return;
+      }
+    }
+
+    // Fallback: match by company_name + address1 + postcode
+    if (data.company_name && data.address1 && data.postcode) {
+      const { data: existing } = await supabase
+        .from("addresses")
+        .select("id, use_count")
+        .eq("org_id", orgId)
+        .ilike("company_name", data.company_name)
+        .ilike("address1", data.address1)
+        .eq("postcode", data.postcode)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("addresses")
+          .update({
+            ...data,
+            org_id: orgId,
+            use_count: (existing.use_count || 0) + 1,
+            last_used_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        return;
+      }
+    }
+
+    // No match — insert new
+    await supabase
+      .from("addresses")
+      .insert({
+        ...data,
+        org_id: orgId,
+        use_count: 1,
+        last_used_at: new Date().toISOString(),
+      });
+  } catch (err) {
+    console.error("Address upsert error:", err);
+  }
+}
+
+function extractAddressData(
+  addr: Record<string, unknown>,
+  type: "delivery" | "collection"
+): AddressData | null {
+  if (!addr || !addr.address1) return null;
+  const state = addr.state as { name?: string; code?: string } | undefined;
+  const country = addr.country as { name?: string; iso2Code?: string; code?: string } | undefined;
+  const location = addr.location as { lat?: string | number; lon?: string | number } | undefined;
+
+  return {
+    company_name: (addr.companyName as string) || null,
+    address1: String(addr.address1),
+    address2: (addr.address2 as string) || null,
+    suburb: (addr.suburb as string) || null,
+    city: (addr.city as string) || null,
+    state_name: state?.name || null,
+    state_code: state?.code || null,
+    postcode: (addr.postcode as string) || null,
+    country_name: country?.name || "Australia",
+    country_code: country?.iso2Code || country?.code || "AU",
+    lat: location?.lat ? parseFloat(String(location.lat)) : null,
+    lon: location?.lon ? parseFloat(String(location.lon)) : null,
+    phone: (addr.phone as string) || null,
+    cc_address_id: addr.id ? String(addr.id) : null,
+    source: "cartoncloud",
+    address_type: type,
+  };
+}
+
 async function processOutboundOrder(
   supabase: ReturnType<typeof createClient>,
   connection: { id: string; org_id: string },
   payload: Record<string, unknown>
 ) {
-  // Accept OUTBOUND type or any payload with an id (CC webhooks may vary)
   if (payload.type && payload.type !== "OUTBOUND") {
     console.log("Skipping non-outbound webhook:", payload.type);
     return;
@@ -150,7 +263,6 @@ async function processOutboundOrder(
 
   const deliverMethod = deliver?.method as Record<string, unknown> | undefined;
 
-  // Upsert the order
   const { data: order, error: orderError } = await supabase
     .from("sale_orders")
     .upsert(
@@ -191,11 +303,21 @@ async function processOutboundOrder(
 
   if (orderError) throw orderError;
 
+  // Extract and upsert addresses
+  const deliverAddrData = deliverAddr ? extractAddressData(deliverAddr, "delivery") : null;
+  const collectAddrData = collectAddr ? extractAddressData(collectAddr, "collection") : null;
+
+  if (deliverAddrData) {
+    await upsertAddress(supabase, connection.org_id, deliverAddrData);
+  }
+  if (collectAddrData) {
+    await upsertAddress(supabase, connection.org_id, collectAddrData);
+  }
+
   // Delete existing items and re-insert
   await supabase.from("sale_order_items").delete().eq("sale_order_id", order.id);
 
   if (items.length > 0) {
-    // Match items to portal products via product_mappings
     const productCodes = items
       .map((item) => {
         const d = item.details as Record<string, unknown> | undefined;

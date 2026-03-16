@@ -12,6 +12,7 @@ import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import { useProducts, type DBProduct } from "@/hooks/useProducts";
 import { useStockOnHand, type StockOnHandRow } from "@/hooks/useStockOnHand";
 import { LocationChip } from "@/components/LocationChip";
+import { AddressPicker, type SelectedAddress } from "@/components/AddressPicker";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, FileUp, Search, Upload, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -40,6 +41,7 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [customerRef, setCustomerRef] = useState("");
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
+  const [deliveryAddress, setDeliveryAddress] = useState<SelectedAddress | null>(null);
   const [notes, setNotes] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
 
@@ -219,6 +221,12 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                       </PopoverContent>
                     </Popover>
                   </div>
+                </div>
+
+                {/* Delivery Address */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Delivery Address</label>
+                  <AddressPicker value={deliveryAddress} onChange={setDeliveryAddress} placeholder="Search delivery address…" />
                 </div>
 
                 {/* Notes */}
