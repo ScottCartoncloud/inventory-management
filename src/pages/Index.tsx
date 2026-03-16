@@ -26,6 +26,7 @@ const Index = () => {
         {activeTab === "orders" && <OrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
         {activeTab === "purchase-orders" && <PurchaseOrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
         {activeTab === "products" && <ProductsView />}
+        {activeTab === "addresses" && <AddressesView />}
         {activeTab === "settings" && <SettingsView />}
       </main>
     </div>
