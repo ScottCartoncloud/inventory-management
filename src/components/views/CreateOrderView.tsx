@@ -241,6 +241,7 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
             urgent,
             deliverAddress: {
               companyName: addr.company_name || "",
+              contactName: addr.contact_name || "",
               address1: addr.address1,
               address2: addr.address2 || "",
               suburb: addr.suburb || "",
