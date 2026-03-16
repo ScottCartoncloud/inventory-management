@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Tag, DollarSign, Ruler, Pencil, Download, Link2, PackageOpen } from "lucide-react";
+import { Tag, DollarSign, Ruler, Pencil, Download } from "lucide-react";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
-import { ProductMappingsTab } from "@/components/ProductMappingsTab";
 import { useStockOnHand } from "@/hooks/useStockOnHand";
 import { useConnections, isConnectionConfigured } from "@/hooks/useConnections";
 import type { DBProduct } from "@/hooks/useProducts";
@@ -74,9 +73,6 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
               </TabsTrigger>
               <TabsTrigger value="dimensions" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(210,100%,40%)] data-[state=active]:text-[hsl(210,100%,40%)] data-[state=active]:shadow-none gap-1.5 py-2.5 text-[0.8125rem]">
                 <Ruler size={13} />Dimensions & UOM
-              </TabsTrigger>
-              <TabsTrigger value="mappings" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(210,100%,40%)] data-[state=active]:text-[hsl(210,100%,40%)] data-[state=active]:shadow-none gap-1.5 py-2.5 text-[0.8125rem]">
-                <Link2 size={13} />Mappings
               </TabsTrigger>
             </TabsList>
 
@@ -212,9 +208,6 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
                 </FieldGroup>
               </TabsContent>
 
-              <TabsContent value="mappings" className="mt-0">
-                <ProductMappingsTab product={product} />
-              </TabsContent>
             </div>
           </Tabs>
 
