@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
-import { Plus, Search, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, AlertTriangle, Cloud, Monitor } from "lucide-react";
 import { CreateOrderView } from "@/components/views/CreateOrderView";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
