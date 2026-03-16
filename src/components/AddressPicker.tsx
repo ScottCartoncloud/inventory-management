@@ -16,6 +16,7 @@ interface PlaceResult {
 export interface SelectedAddress {
   id?: string;
   company_name: string | null;
+  contact_name?: string | null;
   address1: string;
   address2?: string | null;
   suburb: string | null;
