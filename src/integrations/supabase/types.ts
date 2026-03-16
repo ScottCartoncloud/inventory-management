@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          address_type: string | null
+          address1: string
+          address2: string | null
+          cc_address_id: string | null
+          city: string | null
+          company_name: string | null
+          contact_name: string | null
+          country_code: string | null
+          country_name: string | null
+          created_at: string
+          email: string | null
+          google_place_id: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          lat: number | null
+          lon: number | null
+          org_id: string
+          phone: string | null
+          postcode: string | null
+          source: string
+          state_code: string | null
+          state_name: string | null
+          suburb: string | null
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          address_type?: string | null
+          address1: string
+          address2?: string | null
+          cc_address_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          created_at?: string
+          email?: string | null
+          google_place_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          org_id: string
+          phone?: string | null
+          postcode?: string | null
+          source?: string
+          state_code?: string | null
+          state_name?: string | null
+          suburb?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          address_type?: string | null
+          address1?: string
+          address2?: string | null
+          cc_address_id?: string | null
+          city?: string | null
+          company_name?: string | null
+          contact_name?: string | null
+          country_code?: string | null
+          country_name?: string | null
+          created_at?: string
+          email?: string | null
+          google_place_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          lat?: number | null
+          lon?: number | null
+          org_id?: string
+          phone?: string | null
+          postcode?: string | null
+          source?: string
+          state_code?: string | null
+          state_name?: string | null
+          suburb?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addresses_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connection_tokens: {
         Row: {
           access_token: string
