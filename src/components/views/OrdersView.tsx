@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
-import { Plus, Search, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, AlertTriangle, Cloud, Monitor } from "lucide-react";
 import { CreateOrderView } from "@/components/views/CreateOrderView";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -127,6 +128,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                 <TableHead>Items</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Dispatched</TableHead>
                 <TableHead>Status</TableHead>
@@ -134,7 +136,7 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   <div className="text-4xl mb-3 opacity-30">📋</div>
                   <div className="font-semibold mb-1">No orders found</div>
                   <div className="text-sm">Try adjusting your filters</div>
@@ -156,6 +158,15 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
                   <TableCell className="text-center">{order.total_items}</TableCell>
                   <TableCell className="text-right font-semibold">{order.total_qty.toLocaleString()}</TableCell>
                   <TableCell><LocationChip locationId={order.connection_id} /></TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs gap-1">
+                      {order.source === "portal" ? (
+                        <><Monitor size={10} /> Portal</>
+                      ) : (
+                        <><Cloud size={10} /> CC</>
+                      )}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-[0.8125rem]">{formatDate(order.cc_created_at)}</TableCell>
                   <TableCell className="text-muted-foreground text-[0.8125rem]">{formatDate(order.cc_dispatched_at)}</TableCell>
                   <TableCell><StatusBadge status={order.status} /></TableCell>

@@ -263,6 +263,14 @@ async function processOutboundOrder(
 
   const deliverMethod = deliver?.method as Record<string, unknown> | undefined;
 
+  // Check if order already exists to preserve source field
+  const { data: existingOrder } = await supabase
+    .from("sale_orders")
+    .select("id, source")
+    .eq("connection_id", connection.id)
+    .eq("cc_order_id", String(payload.id))
+    .single();
+
   const { data: order, error: orderError } = await supabase
     .from("sale_orders")
     .upsert(
@@ -273,7 +281,7 @@ async function processOutboundOrder(
         cc_version: Number(payload.version) || null,
         order_number: references?.customer ? String(references.customer) : null,
         cc_numeric_id: references?.numericId ? String(references.numericId) : null,
-        source: "cartoncloud",
+        source: existingOrder?.source || "cartoncloud",
         status: String(payload.status || "UNKNOWN"),
         customer_name: (deliverAddr?.companyName || customer?.name || null) as string | null,
         deliver_company: (deliverAddr?.companyName || null) as string | null,
