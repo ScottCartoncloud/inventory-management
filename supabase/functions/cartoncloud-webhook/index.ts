@@ -367,10 +367,11 @@ async function processOutboundOrder(
     await upsertAddress(supabase, connection.org_id, collectAddrData);
   }
 
-  // Delete existing items and re-insert
-  await supabase.from("sale_order_items").delete().eq("sale_order_id", order.id);
-
+  // Only delete and re-insert items if the webhook payload actually contains items
+  // Rejected orders from CC often have no items array — don't wipe existing items
   if (items.length > 0) {
+    await supabase.from("sale_order_items").delete().eq("sale_order_id", order.id);
+
     const productCodes = items
       .map((item) => {
         const d = item.details as Record<string, unknown> | undefined;

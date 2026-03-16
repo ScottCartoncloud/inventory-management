@@ -62,8 +62,33 @@ Deno.serve(async (req) => {
       return jsonError("Warehouse name not configured for this connection", 400);
     }
 
-    const items = (order.items || []) as OrderItemRow[];
-    if (!items.length) return jsonError("Order must have at least one item", 400);
+    let items = (order.items || []) as OrderItemRow[];
+
+    // Fallback: reconstruct items from raw_payload if sale_order_items were lost
+    if (!items.length) {
+      const rawItems = ((rawPayload.items || []) as Array<Record<string, unknown>>);
+      if (rawItems.length) {
+        items = rawItems.map(ri => {
+          const d = (ri.details as Record<string, unknown> | undefined) || {};
+          const product = (d.product as Record<string, unknown> | undefined) || {};
+          const refs = (product.references as Record<string, unknown> | undefined) || {};
+          const uom = (d.unitOfMeasure as Record<string, unknown> | undefined) || {};
+          const measures = (ri.measures as Record<string, unknown> | undefined) || {};
+          return {
+            product_id: null,
+            product_name: stringOrEmpty(product.name) || null,
+            cc_product_code: stringOrEmpty(refs.code) || null,
+            quantity: Number(measures.quantity) || 0,
+            unit_of_measure: stringOrEmpty(uom.type) || "CTN",
+          };
+        });
+      }
+    }
+
+    // Last resort: try product_mappings for this connection
+    if (!items.length) {
+      return jsonError("No items found — the order has no line items to resubmit. Please create a new order instead.", 400);
+    }
 
     const rawPayload = (order.raw_payload || {}) as Record<string, unknown>;
     const rawDetails = (rawPayload.details as Record<string, unknown> | undefined) || {};
