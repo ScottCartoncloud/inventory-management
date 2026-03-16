@@ -74,9 +74,6 @@ export function ProductDrawer({ product, onClose }: ProductDrawerProps) {
               <TabsTrigger value="dimensions" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(210,100%,40%)] data-[state=active]:text-[hsl(210,100%,40%)] data-[state=active]:shadow-none gap-1.5 py-2.5 text-[0.8125rem]">
                 <Ruler size={13} />Dimensions & UOM
               </TabsTrigger>
-              <TabsTrigger value="mappings" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(210,100%,40%)] data-[state=active]:text-[hsl(210,100%,40%)] data-[state=active]:shadow-none gap-1.5 py-2.5 text-[0.8125rem]">
-                <Link2 size={13} />Mappings
-              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto p-5">
