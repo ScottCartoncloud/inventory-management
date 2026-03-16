@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Cloud, Monitor } from "lucide-react";
+import { ChevronDown, Cloud, Monitor, RefreshCw, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { SaleOrder } from "@/hooks/useSaleOrders";
 
 interface OrderDetailDrawerProps {
@@ -25,9 +29,47 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDrawerProps) {
+  const [resubmitting, setResubmitting] = useState(false);
+
   if (!order) return null;
 
   const items = order.items || [];
+  const canResubmit = order.status === "REJECTED";
+
+  async function handleResubmit() {
+    if (!order) return;
+    setResubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cartoncloud-resubmit-order", {
+        body: { orderId: order.id },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Resubmit failed");
+
+      if (data.warning) {
+        toast({
+          title: "Order resubmitted but flagged",
+          description: `Order ${data.order?.order_number} was created with status: ${data.order?.status}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Order resubmitted successfully",
+          description: `Order ${data.order?.order_number} — status: ${data.order?.status}`,
+        });
+      }
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({
+        title: "Failed to resubmit order",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setResubmitting(false);
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -52,6 +94,23 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
               <Badge variant="destructive" className="text-xs">Urgent</Badge>
             )}
           </div>
+          {canResubmit && (
+            <div className="mt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleResubmit}
+                disabled={resubmitting}
+                className="gap-1.5"
+              >
+                {resubmitting ? (
+                  <><Loader2 size={14} className="animate-spin" /> Resubmitting…</>
+                ) : (
+                  <><RefreshCw size={14} /> Resubmit to CartonCloud</>
+                )}
+              </Button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="space-y-5 pt-5">
