@@ -79,7 +79,11 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
       }[] = [];
 
       for (const cc of ccProducts) {
-        const ccCode = cc.code || "";
+        const ccCode = cc.references?.code || cc.code || "";
+        if (!ccCode) {
+          console.warn("Skipping CC product with no code:", cc.id, cc.name);
+          continue;
+        }
         const portal = portalBySku.get(ccCode.toLowerCase());
 
         if (portal) {
