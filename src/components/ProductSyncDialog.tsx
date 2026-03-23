@@ -87,7 +87,7 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
         is_override: boolean;
       }[] = [];
 
-      for (const cc of ccProducts) {
+      for (const cc of dedupedCCProducts) {
         const ccCode = cc.references?.code || cc.code || "";
         if (!ccCode) {
           console.warn("Skipping CC product with no code:", cc.id, cc.name);
