@@ -2,16 +2,20 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useConnections, isConnectionConfigured, useTestConnection, type Connection } from "@/hooks/useConnections";
+import { useConnections, isConnectionConfigured, useTestConnection, useUpsertConnection, type Connection } from "@/hooks/useConnections";
 import { ConnectionSettingsModal } from "@/components/settings/ConnectionSettingsModal";
 import { Settings, Plus, Cloud, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function SettingsView() {
   const { data: connections, isLoading } = useConnections();
   const [managingConnection, setManagingConnection] = useState<Connection | null>(null);
+  const [showNewDialog, setShowNewDialog] = useState(false);
 
   return (
     <div className="flex-1 overflow-y-auto animate-in fade-in duration-200">
@@ -74,7 +78,7 @@ export function SettingsView() {
               )}
 
               <div className="mt-5">
-                <Button><Plus size={14} /> Add Connection</Button>
+                <Button onClick={() => setShowNewDialog(true)}><Plus size={14} /> Add Connection</Button>
               </div>
             </Card>
           </TabsContent>
@@ -88,7 +92,90 @@ export function SettingsView() {
           connection={managingConnection}
         />
       )}
+
+      <NewConnectionDialog
+        open={showNewDialog}
+        onOpenChange={setShowNewDialog}
+        onCreated={(conn) => {
+          setShowNewDialog(false);
+          setManagingConnection(conn);
+        }}
+      />
     </div>
+  );
+}
+
+const COLORS = ["#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#f97316"];
+
+function NewConnectionDialog({ open, onOpenChange, onCreated }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCreated: (conn: Connection) => void;
+}) {
+  const upsert = useUpsertConnection();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [color, setColor] = useState(COLORS[0]);
+
+  const handleCreate = async () => {
+    if (!name.trim() || !code.trim()) return;
+    try {
+      const result = await upsert.mutateAsync({
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+        color,
+        api_endpoint: "https://api.cartoncloud.com.au",
+      });
+      toast({ title: "Connection created", description: `${name} has been added.` });
+      setName("");
+      setCode("");
+      setColor(COLORS[0]);
+      onCreated(result as unknown as Connection);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>New Connection</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="conn-name">Name</Label>
+            <Input id="conn-name" placeholder="e.g. Sydney Warehouse" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="conn-code">Code</Label>
+            <Input id="conn-code" placeholder="e.g. SYD" value={code} onChange={e => setCode(e.target.value)} className="uppercase" />
+            <p className="text-xs text-muted-foreground">Short identifier used in order prefixes</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Colour</Label>
+            <div className="flex gap-2">
+              {COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                  style={{
+                    background: c,
+                    borderColor: color === c ? 'hsl(var(--foreground))' : 'transparent',
+                  }}
+                  onClick={() => setColor(c)}
+                />
+              ))}
+            </div>
+          </div>
+          <Button className="w-full" onClick={handleCreate} disabled={!name.trim() || !code.trim() || upsert.isPending}>
+            {upsert.isPending ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+            Create Connection
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
