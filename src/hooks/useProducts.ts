@@ -227,17 +227,26 @@ export function useBulkUpsertMappings() {
       is_override: boolean;
     }[]) => {
       if (mappings.length === 0) return;
-      const { error } = await supabase
-        .from("product_mappings")
-        .upsert(
-          mappings.map(m => ({
-            ...m,
-            cc_product_id: m.cc_product_id || null,
-            last_synced_at: new Date().toISOString(),
-          })),
-          { onConflict: "product_id,connection_id" }
-        );
-      if (error) throw error;
+
+      const deduped = Array.from(
+        new Map(
+          mappings.map((m) => [`${m.product_id}::${m.connection_id}`, m] as const)
+        ).values()
+      );
+
+      for (const m of deduped) {
+        const { error } = await supabase
+          .from("product_mappings")
+          .upsert(
+            {
+              ...m,
+              cc_product_id: m.cc_product_id || null,
+              last_synced_at: new Date().toISOString(),
+            },
+            { onConflict: "product_id,connection_id" }
+          );
+        if (error) throw error;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["product_mappings"] }),
   });
