@@ -138,9 +138,12 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
         }
       }
 
-      // Bulk upsert all mappings
-      if (allMappings.length > 0) {
-        await bulkUpsertMappings.mutateAsync(allMappings);
+      // Bulk upsert all mappings (deduplicate by product_id+connection_id)
+      const dedupKey = (m: typeof allMappings[0]) => `${m.product_id}::${m.connection_id}`;
+      const dedupMap = new Map(allMappings.map(m => [dedupKey(m), m]));
+      const uniqueMappings = Array.from(dedupMap.values());
+      if (uniqueMappings.length > 0) {
+        await bulkUpsertMappings.mutateAsync(uniqueMappings);
       }
 
       // Update connection sync stats
