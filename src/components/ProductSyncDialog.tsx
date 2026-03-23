@@ -62,11 +62,20 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
     try {
       const ccProducts = await fetchAllCCProducts();
 
-      // Build lookup by SKU (references.code)
+      // Build lookup by SKU (references.code) and deduplicate CC products by code
       const portalBySku = new Map<string, DBProduct>();
       for (const p of products) {
         portalBySku.set(p.sku.toLowerCase(), p);
       }
+
+      // Deduplicate CC products by code (keep first occurrence)
+      const seenCodes = new Set<string>();
+      const dedupedCCProducts = ccProducts.filter(cc => {
+        const code = (cc.references?.code || cc.code || "").toLowerCase();
+        if (!code || seenCodes.has(code)) return false;
+        seenCodes.add(code);
+        return true;
+      });
 
       let matched = 0;
       let created = 0;
