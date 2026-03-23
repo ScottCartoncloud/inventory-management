@@ -43,11 +43,32 @@ export function ProductSyncDialog({ open, onOpenChange, connection }: ProductSyn
 
     while (true) {
       const { data, error } = await supabase.functions.invoke("cartoncloud-proxy", {
-        body: { connectionId: connection.id, path: `products?page=${page}&size=50` },
+        body: {
+          connectionId: connection.id,
+          method: "POST",
+          path: `warehouse-products/search?page=${page}&size=50`,
+          body: { condition: { type: "AndCondition", conditions: [] } },
+        },
       });
       if (error) throw error;
       const items = Array.isArray(data) ? data : [];
-      allProducts.push(...items);
+      // Extract product info from warehouse-product response structure
+      const mapped: CCProduct[] = items.map((wp: any) => ({
+        id: wp.details?.product?.id || wp.id,
+        code: wp.details?.product?.references?.code,
+        name: wp.details?.product?.name || wp.name || "",
+        description: wp.description,
+        barcode: wp.barcode,
+        weight: wp.weight,
+        width: wp.width,
+        height: wp.height,
+        length: wp.length,
+        references: wp.details?.product?.references || wp.references,
+        unitsOfMeasure: wp.details?.unitOfMeasure
+          ? [{ type: wp.details.unitOfMeasure.type, name: wp.details.unitOfMeasure.name, quantity: 1 }]
+          : [],
+      }));
+      allProducts.push(...mapped);
       if (items.length < 50 || page >= 100) break;
       page++;
     }
