@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface CCProduct {
   id: string;
-  code: string;
+  code?: string;
   name: string;
   description?: string;
   barcode?: string;
@@ -18,6 +18,7 @@ interface CCProduct {
   width?: number;
   height?: number;
   length?: number;
+  references?: { code?: string; numericId?: string };
   unitsOfMeasure?: { type: string; name: string; quantity: number }[];
 }
 
