@@ -223,7 +223,7 @@ function handleCreateOrderConfirmation(args: any) {
               ccProductCode: args.ccProductCode,
               productName: args.productName || args.ccProductCode,
               quantity: args.quantity,
-              unitOfMeasure: args.unitOfMeasure || "EACH",
+              unitOfMeasure: args.unitOfMeasure || "CTN",
             },
           ],
           deliverAddress: args.deliverAddress,
