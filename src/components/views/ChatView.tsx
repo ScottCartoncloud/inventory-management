@@ -32,7 +32,7 @@ function LoadingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-2 h-2 rounded-full bg-white/60 animate-bounce"
+          className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce"
           style={{ animationDelay: `${i * 0.15}s` }}
         />
       ))}
@@ -164,17 +164,17 @@ export function ChatView() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col bg-gradient-to-b from-[hsl(206,95%,36%)] to-[hsl(206,95%,28%)] overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden">
       {/* Scrollable thread area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-[700px] mx-auto w-full px-4 py-6 flex flex-col min-h-full">
           {!hasMessages && (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-8">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
-                <Boxes size={32} className="text-white" />
+              <div className="w-16 h-16 bg-[hsl(206,95%,36%)]/10 rounded-2xl flex items-center justify-center">
+                <Boxes size={32} className="text-[hsl(206,95%,36%)]" />
               </div>
-              <h1 className="text-2xl font-semibold text-white">Bibendum AI Assistant</h1>
-              <p className="text-white/60 text-sm text-center max-w-md">
+              <h1 className="text-2xl font-semibold text-foreground">Bibendum AI Assistant</h1>
+              <p className="text-muted-foreground text-sm text-center max-w-md">
                 Ask about stock levels, orders, or place new orders using natural language.
               </p>
             </div>
@@ -190,30 +190,30 @@ export function ChatView() {
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-white text-gray-900 rounded-br-md"
-                      : "bg-white/15 text-white rounded-bl-md"
+                      ? "bg-[hsl(206,95%,36%)] text-white rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
                   }`}
                 >
                   {msg.id === "loading" ? (
                     <LoadingDots />
                   ) : msg.role === "assistant" ? (
                     <>
-                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
+                      <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                       {msg.type === "confirmation" && msg.confirmationData && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-white/20">
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
                           <button
                             onClick={() => handleConfirm(msg)}
                             disabled={isLoading}
-                            className="px-4 py-1.5 bg-white text-[hsl(206,95%,36%)] rounded-lg text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+                            className="px-4 py-1.5 bg-[hsl(206,95%,36%)] text-white rounded-lg text-sm font-medium hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50"
                           >
                             Yes, place order
                           </button>
                           <button
                             onClick={() => handleCancel(msg)}
                             disabled={isLoading}
-                            className="px-4 py-1.5 bg-white/10 text-white rounded-lg text-sm font-medium hover:bg-white/20 transition-colors disabled:opacity-50"
+                            className="px-4 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                           >
                             Cancel
                           </button>
@@ -231,7 +231,7 @@ export function ChatView() {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/10 bg-white/5 backdrop-blur-sm">
+      <div className="border-t border-border bg-muted/50">
         <div className="max-w-[700px] mx-auto w-full px-4 py-4">
           {/* Suggestion chips */}
           {!hasMessages && (
@@ -240,9 +240,9 @@ export function ChatView() {
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full transition-colors"
+                  className="px-3 py-1.5 bg-[hsl(206,95%,36%)]/10 hover:bg-[hsl(206,95%,36%)]/20 text-[hsl(206,95%,36%)] text-xs rounded-full transition-colors"
                 >
-                  <Sparkles size={12} className="inline mr-1.5 -mt-0.5" />
+                  <Sparkles size={12} className="inline mr-1.5 -mt-0.5 text-[hsl(206,95%,36%)]" />
                   {s}
                 </button>
               ))}
@@ -262,12 +262,12 @@ export function ChatView() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about stock, orders, or place a new order..."
               disabled={isLoading}
-              className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
+              className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-full px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[hsl(206,95%,36%)] hover:bg-white/90 transition-colors disabled:opacity-50 shrink-0"
+              className="w-10 h-10 rounded-full bg-[hsl(206,95%,36%)] flex items-center justify-center text-white hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50 shrink-0"
             >
               <Send size={16} />
             </button>
