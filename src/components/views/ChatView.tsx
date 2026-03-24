@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Boxes, Sparkles, Plus, MessageSquare, Trash2 } from "lucide-react";
+import { Send, Boxes, Sparkles, Plus, MessageSquare, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useConnections } from "@/hooks/useConnections";
 import ReactMarkdown from "react-markdown";
