@@ -255,7 +255,8 @@ Rules:
 - If the user's request is ambiguous (e.g. no quantity, no address), ask for clarification before proceeding.
 - Keep responses concise and friendly. Use plain language, not jargon.
 - When showing stock or order data, format it clearly using markdown tables or lists.
-- If you can't find a product or connection that matches, say so clearly.`;
+- If you can't find a product or connection that matches, say so clearly.
+- When a user mentions any delivery location (company name, suburb, address, postcode), ALWAYS call search_addresses first before asking for address details. If a match is found, confirm with the user which address to use. Only ask for manual address input if no matches are found.`;
 
     // Build messages for the AI
     const aiMessages: any[] = [
