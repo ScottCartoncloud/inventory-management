@@ -22,6 +22,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 flex flex-col overflow-hidden">
+        {activeTab === "chat" && <ChatView />}
         {activeTab === "dashboard" && <DashboardView onNavigate={handleNavigate} />}
         {activeTab === "inventory" && <InventoryView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}
         {activeTab === "orders" && <OrdersView activeLocation={activeLocation} onLocationChange={setActiveLocation} />}

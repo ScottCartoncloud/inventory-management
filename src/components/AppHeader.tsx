@@ -1,7 +1,8 @@
-import { Home, Package, ClipboardCheck, PackageOpen, Briefcase, Settings, ChevronDown, LogOut, Boxes, MapPin } from "lucide-react";
+import { Home, Package, ClipboardCheck, PackageOpen, Briefcase, Settings, ChevronDown, LogOut, Boxes, MapPin, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { id: "chat", label: "AI Assistant", icon: Sparkles },
   { id: "dashboard", label: "Dashboard", icon: Home },
   { id: "inventory", label: "Stock on Hand", icon: Package },
   { id: "orders", label: "Orders", icon: ClipboardCheck },
