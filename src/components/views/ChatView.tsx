@@ -197,7 +197,7 @@ export function ChatView() {
           confirmation_data: assistantMsg.confirmationData || null,
         });
         // Update conversation timestamp
-        await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convoId);
+        await (supabase.from("chat_conversations" as any) as any).update({ updated_at: new Date().toISOString() }).eq("id", convoId);
       }
 
       loadConversations();
