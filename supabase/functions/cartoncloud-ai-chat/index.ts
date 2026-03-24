@@ -139,6 +139,8 @@ async function handleGetStockOnHand(
   let results = (data || []).map((row: any) => ({
     productName: row.products?.name ?? "Unknown",
     sku: row.products?.sku ?? row.cc_product_code,
+    ccProductCode: row.cc_product_code,
+    connectionId: row.connection_id,
     qty: row.qty,
     productStatus: row.product_status,
     unitOfMeasure: row.unit_of_measure,
