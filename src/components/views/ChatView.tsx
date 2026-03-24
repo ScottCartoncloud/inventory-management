@@ -46,7 +46,7 @@ export function ChatView() {
   const [isLoading, setIsLoading] = useState(false);
   const { data: connections } = useConnections();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -254,15 +254,31 @@ export function ChatView() {
               e.preventDefault();
               sendMessage(input);
             }}
-            className="flex items-center gap-2"
+            className="flex items-end gap-2"
           >
-            <input
-              ref={inputRef}
+            <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Auto-resize
+                const ta = e.target;
+                ta.style.height = "auto";
+                ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage(input);
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = "auto";
+                  }
+                }
+              }}
               placeholder="Ask about stock, orders, or place a new order..."
               disabled={isLoading}
-              className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-full px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50"
+              rows={1}
+              className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-2xl px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50 resize-none overflow-y-auto"
             />
             <button
               type="submit"
