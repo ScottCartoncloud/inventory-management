@@ -243,7 +243,7 @@ export function ChatView() {
       setMessages((prev) => [...prev, successMsg]);
 
       if (activeConvoId) {
-        await supabase.from("chat_messages").insert({
+        await (supabase.from("chat_messages" as any) as any).insert({
           conversation_id: activeConvoId,
           role: "assistant",
           content: successMsg.content,
