@@ -146,11 +146,14 @@ async function handleGetStockOnHand(
   }));
 
   if (args.productSearch) {
-    const search = args.productSearch.toLowerCase();
+    const searchWords = args.productSearch.toLowerCase().split(/\s+/).filter(Boolean);
     results = results.filter(
-      (r: any) =>
-        r.productName.toLowerCase().includes(search) ||
-        r.sku.toLowerCase().includes(search)
+      (r: any) => {
+        const name = r.productName.toLowerCase();
+        const sku = r.sku.toLowerCase();
+        // Match if ALL search words appear in product name or SKU
+        return searchWords.every((w: string) => name.includes(w) || sku.includes(w));
+      }
     );
   }
 
