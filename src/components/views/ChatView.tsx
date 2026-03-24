@@ -435,6 +435,7 @@ export function ChatView() {
                           <>
                             <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
                               <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
                                 components={{
                                   table: ({ children }) => (
                                     <div className="my-3 overflow-x-auto rounded-lg border border-border">
