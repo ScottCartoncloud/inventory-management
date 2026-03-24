@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.cartoncloud-resubmit-order]
 verify_jwt = false
+
+[functions.cartoncloud-ai-chat]
+verify_jwt = false
