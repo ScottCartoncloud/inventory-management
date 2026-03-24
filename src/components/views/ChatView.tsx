@@ -136,8 +136,7 @@ export function ChatView() {
       // Create conversation if new
       let convoId = activeConvoId;
       if (!convoId) {
-        const { data: newConvo } = await supabase
-          .from("chat_conversations")
+        const { data: newConvo } = await (supabase.from("chat_conversations" as any) as any)
           .insert({ org_id: ORG_ID, title: generateTitle(text) })
           .select("id")
           .single();
