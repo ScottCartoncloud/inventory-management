@@ -190,8 +190,8 @@ export function ChatView() {
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-white text-gray-900 rounded-br-md"
-                      : "bg-white/15 text-white rounded-bl-md"
+                      ? "bg-[hsl(206,95%,36%)] text-white rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
                   }`}
                 >
                   {msg.id === "loading" ? (
