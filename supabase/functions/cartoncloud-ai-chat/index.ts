@@ -333,12 +333,22 @@ CRITICAL RULES — ALWAYS USE YOUR TOOLS:
             result = handleCreateOrderConfirmation(args);
             confirmationResult = result;
           } else if (fnName === "search_addresses") {
-            const pattern = `%${args.query}%`;
-            const { data: addresses, error: addrErr } = await supabase
+            // Split query into words and search each word across all fields
+            const words = (args.query || "").split(/\s+/).filter(Boolean);
+            let addrQuery = supabase
               .from("addresses")
               .select("id, company_name, contact_name, address1, address2, suburb, state_code, postcode, country_code, use_count, last_used_at")
-              .eq("is_active", true)
-              .or(`company_name.ilike.${pattern},suburb.ilike.${pattern},address1.ilike.${pattern},postcode.ilike.${pattern}`)
+              .eq("is_active", true);
+            
+            // Build OR filter for each word across all searchable fields
+            const orConditions = words.map((w: string) => {
+              const p = `%${w}%`;
+              return `company_name.ilike.${p},suburb.ilike.${p},address1.ilike.${p},postcode.ilike.${p}`;
+            }).join(",");
+            
+            addrQuery = addrQuery.or(orConditions);
+            
+            const { data: addresses, error: addrErr } = await addrQuery
               .order("use_count", { ascending: false })
               .limit(5);
 
