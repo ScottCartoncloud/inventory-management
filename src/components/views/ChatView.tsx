@@ -436,20 +436,17 @@ export function ChatView() {
                               <ReactMarkdown>{msg.content}</ReactMarkdown>
                             </div>
                             {msg.type === "confirmation" && msg.confirmationData && (
-                              <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                              <div className="mt-3 pt-3 border-t border-border">
                                 <button
-                                  onClick={() => handleConfirm(msg)}
-                                  disabled={isLoading}
-                                  className="px-4 py-1.5 bg-[hsl(206,95%,36%)] text-white rounded-lg text-sm font-medium hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50"
+                                  onClick={() => setOrderPreview({
+                                    msgId: msg.id,
+                                    connectionId: msg.confirmationData!.connectionId,
+                                    confirmationData: msg.confirmationData!,
+                                  })}
+                                  className="flex items-center gap-2 px-4 py-1.5 bg-[hsl(206,95%,36%)]/10 text-[hsl(206,95%,36%)] rounded-lg text-sm font-medium hover:bg-[hsl(206,95%,36%)]/20 transition-colors"
                                 >
-                                  Yes, place order
-                                </button>
-                                <button
-                                  onClick={() => handleCancel(msg)}
-                                  disabled={isLoading}
-                                  className="px-4 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
-                                >
-                                  Cancel
+                                  <Boxes size={14} />
+                                  Review & confirm order
                                 </button>
                               </div>
                             )}
