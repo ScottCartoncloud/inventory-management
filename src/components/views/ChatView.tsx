@@ -61,8 +61,7 @@ export function ChatView() {
 
   // Load recent conversations
   const loadConversations = useCallback(async () => {
-    const { data } = await supabase
-      .from("chat_conversations")
+    const { data } = await (supabase.from("chat_conversations" as any) as any)
       .select("id, title, updated_at")
       .eq("org_id", ORG_ID)
       .order("updated_at", { ascending: false })
