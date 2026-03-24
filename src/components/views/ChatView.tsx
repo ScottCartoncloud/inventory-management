@@ -108,7 +108,7 @@ export function ChatView() {
 
   const deleteConversation = async (convoId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await supabase.from("chat_conversations").delete().eq("id", convoId);
+    await (supabase.from("chat_conversations" as any) as any).delete().eq("id", convoId);
     if (activeConvoId === convoId) startNewChat();
     loadConversations();
   };
