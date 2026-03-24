@@ -231,7 +231,7 @@ export function ChatView() {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/10 bg-white/5 backdrop-blur-sm">
+      <div className="border-t border-border bg-muted/50">
         <div className="max-w-[700px] mx-auto w-full px-4 py-4">
           {/* Suggestion chips */}
           {!hasMessages && (
