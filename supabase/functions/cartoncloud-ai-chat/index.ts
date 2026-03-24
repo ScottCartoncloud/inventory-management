@@ -97,6 +97,24 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "search_addresses",
+      description:
+        "Search the saved address book for a delivery address. Call this whenever the user mentions any delivery location — a company name, suburb, postcode, or street — before asking them to provide address details manually. Returns matching addresses ordered by most frequently used.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search term — company name, suburb, postcode, or partial street address.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 // ── Tool handlers ──
