@@ -78,7 +78,7 @@ const tools = [
           productName: { type: "string" },
           ccProductCode: { type: "string" },
           quantity: { type: "number" },
-          unitOfMeasure: { type: "string", description: "e.g. EACH, CARTON" },
+          unitOfMeasure: { type: "string", description: "UOM type from stock data, e.g. CTN, UNIT, PAL. Must match CartonCloud UOM exactly." },
           deliverAddress: {
             type: "object",
             properties: {
@@ -223,7 +223,7 @@ function handleCreateOrderConfirmation(args: any) {
               ccProductCode: args.ccProductCode,
               productName: args.productName || args.ccProductCode,
               quantity: args.quantity,
-              unitOfMeasure: args.unitOfMeasure || "EACH",
+              unitOfMeasure: args.unitOfMeasure || "CTN",
             },
           ],
           deliverAddress: args.deliverAddress,
