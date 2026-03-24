@@ -151,7 +151,7 @@ export function ChatView() {
 
       // Save user message
       if (convoId) {
-        await supabase.from("chat_messages").insert({
+        await (supabase.from("chat_messages" as any) as any).insert({
           conversation_id: convoId,
           role: "user",
           content: text.trim(),
