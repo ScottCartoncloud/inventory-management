@@ -75,8 +75,7 @@ export function ChatView() {
 
   // Load messages for active conversation
   const loadMessages = useCallback(async (convoId: string) => {
-    const { data } = await supabase
-      .from("chat_messages")
+    const { data } = await (supabase.from("chat_messages" as any) as any)
       .select("id, role, content, type, confirmation_data, created_at")
       .eq("conversation_id", convoId)
       .order("created_at", { ascending: true });
