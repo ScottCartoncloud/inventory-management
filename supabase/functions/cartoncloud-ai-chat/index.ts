@@ -97,6 +97,24 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "search_addresses",
+      description:
+        "Search the saved address book for a delivery address. Call this whenever the user mentions any delivery location — a company name, suburb, postcode, or street — before asking them to provide address details manually. Returns matching addresses ordered by most frequently used.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search term — company name, suburb, postcode, or partial street address.",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 // ── Tool handlers ──
@@ -237,7 +255,8 @@ Rules:
 - If the user's request is ambiguous (e.g. no quantity, no address), ask for clarification before proceeding.
 - Keep responses concise and friendly. Use plain language, not jargon.
 - When showing stock or order data, format it clearly using markdown tables or lists.
-- If you can't find a product or connection that matches, say so clearly.`;
+- If you can't find a product or connection that matches, say so clearly.
+- When a user mentions any delivery location (company name, suburb, address, postcode), ALWAYS call search_addresses first before asking for address details. If a match is found, confirm with the user which address to use. Only ask for manual address input if no matches are found.`;
 
     // Build messages for the AI
     const aiMessages: any[] = [
@@ -299,7 +318,39 @@ Rules:
           } else if (fnName === "create_order_confirmation") {
             result = handleCreateOrderConfirmation(args);
             confirmationResult = result;
-            // Still give the result to the AI so it can compose a confirmation message
+          } else if (fnName === "search_addresses") {
+            const pattern = `%${args.query}%`;
+            const { data: addresses, error: addrErr } = await supabase
+              .from("addresses")
+              .select("id, company_name, contact_name, address1, address2, suburb, state_code, postcode, country_code, use_count, last_used_at")
+              .eq("is_active", true)
+              .or(`company_name.ilike.${pattern},suburb.ilike.${pattern},address1.ilike.${pattern},postcode.ilike.${pattern}`)
+              .order("use_count", { ascending: false })
+              .limit(5);
+
+            if (addrErr) {
+              result = { error: addrErr.message };
+            } else if (!addresses || addresses.length === 0) {
+              result = { found: false, message: "No matching addresses found in the address book." };
+            } else {
+              result = {
+                found: true,
+                count: addresses.length,
+                addresses: addresses.map((a: any) => ({
+                  id: a.id,
+                  companyName: a.company_name,
+                  contactName: a.contact_name,
+                  address1: a.address1,
+                  address2: a.address2,
+                  suburb: a.suburb,
+                  stateCode: a.state_code,
+                  postcode: a.postcode,
+                  countryCode: a.country_code,
+                  useCount: a.use_count,
+                  lastUsedAt: a.last_used_at,
+                })),
+              };
+            }
           } else {
             result = { error: `Unknown tool: ${fnName}` };
           }
