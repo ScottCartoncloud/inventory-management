@@ -165,77 +165,60 @@ export function ChatView() {
 
   return (
     <div className="flex-1 flex flex-col bg-background overflow-hidden">
-      {/* Scrollable thread area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-[700px] mx-auto w-full px-4 py-6 flex flex-col min-h-full">
-          {!hasMessages && (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-8">
-              <div className="w-16 h-16 bg-[hsl(206,95%,36%)]/10 rounded-2xl flex items-center justify-center">
-                <Boxes size={32} className="text-[hsl(206,95%,36%)]" />
-              </div>
-              <h1 className="text-2xl font-semibold text-foreground">Bibendum AI Assistant</h1>
-              <p className="text-muted-foreground text-sm text-center max-w-md">
-                Ask about stock levels, orders, or place new orders using natural language.
-              </p>
+      {!hasMessages ? (
+        /* ── Empty state: centered vertically like Claude ── */
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="w-full max-w-[700px] flex flex-col items-center gap-6">
+            <div className="w-16 h-16 bg-[hsl(206,95%,36%)]/10 rounded-2xl flex items-center justify-center">
+              <Boxes size={32} className="text-[hsl(206,95%,36%)]" />
             </div>
-          )}
+            <h1 className="text-2xl font-semibold text-foreground">Bibendum AI Assistant</h1>
+            <p className="text-muted-foreground text-sm text-center max-w-md">
+              Ask about stock levels, orders, or place new orders using natural language.
+            </p>
 
-          {/* Messages */}
-          <div className="flex flex-col gap-3 mt-auto">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            {/* Input box */}
+            <div className="w-full mt-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendMessage(input);
+                }}
+                className="flex items-end gap-2"
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-[hsl(206,95%,36%)] text-white rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md"
-                  }`}
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    const ta = e.target;
+                    ta.style.height = "auto";
+                    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(input);
+                      if (textareaRef.current) textareaRef.current.style.height = "auto";
+                    }
+                  }}
+                  placeholder="Ask about stock, orders, or place a new order..."
+                  disabled={isLoading}
+                  rows={1}
+                  className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-2xl px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50 resize-none overflow-y-auto"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="w-10 h-10 rounded-full bg-[hsl(206,95%,36%)] flex items-center justify-center text-white hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50 shrink-0"
                 >
-                  {msg.id === "loading" ? (
-                    <LoadingDots />
-                  ) : msg.role === "assistant" ? (
-                    <>
-                      <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                      {msg.type === "confirmation" && msg.confirmationData && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                          <button
-                            onClick={() => handleConfirm(msg)}
-                            disabled={isLoading}
-                            className="px-4 py-1.5 bg-[hsl(206,95%,36%)] text-white rounded-lg text-sm font-medium hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50"
-                          >
-                            Yes, place order
-                          </button>
-                          <button
-                            onClick={() => handleCancel(msg)}
-                            disabled={isLoading}
-                            className="px-4 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    msg.content
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+                  <Send size={16} />
+                </button>
+              </form>
+            </div>
 
-      {/* Input area */}
-      <div className="border-t border-border bg-muted/50">
-        <div className="max-w-[700px] mx-auto w-full px-4 py-4">
-          {/* Suggestion chips */}
-          {!hasMessages && (
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Suggestion chips */}
+            <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s) => (
                 <button
                   key={s}
@@ -247,49 +230,105 @@ export function ChatView() {
                 </button>
               ))}
             </div>
-          )}
+          </div>
+        </div>
+      ) : (
+        /* ── Active conversation ── */
+        <>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+            <div className="max-w-[700px] mx-auto w-full px-4 py-6 flex flex-col min-h-full">
+              <div className="flex flex-col gap-3 mt-auto">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-[hsl(206,95%,36%)] text-white rounded-br-md"
+                          : "bg-muted text-foreground rounded-bl-md"
+                      }`}
+                    >
+                      {msg.id === "loading" ? (
+                        <LoadingDots />
+                      ) : msg.role === "assistant" ? (
+                        <>
+                          <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                          {msg.type === "confirmation" && msg.confirmationData && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                              <button
+                                onClick={() => handleConfirm(msg)}
+                                disabled={isLoading}
+                                className="px-4 py-1.5 bg-[hsl(206,95%,36%)] text-white rounded-lg text-sm font-medium hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50"
+                              >
+                                Yes, place order
+                              </button>
+                              <button
+                                onClick={() => handleCancel(msg)}
+                                disabled={isLoading}
+                                className="px-4 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage(input);
-            }}
-            className="flex items-end gap-2"
-          >
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                // Auto-resize
-                const ta = e.target;
-                ta.style.height = "auto";
-                ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+          {/* Sticky input at bottom during conversation */}
+          <div className="border-t border-border bg-muted/50">
+            <div className="max-w-[700px] mx-auto w-full px-4 py-4">
+              <form
+                onSubmit={(e) => {
                   e.preventDefault();
                   sendMessage(input);
-                  if (textareaRef.current) {
-                    textareaRef.current.style.height = "auto";
-                  }
-                }
-              }}
-              placeholder="Ask about stock, orders, or place a new order..."
-              disabled={isLoading}
-              rows={1}
-              className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-2xl px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50 resize-none overflow-y-auto"
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="w-10 h-10 rounded-full bg-[hsl(206,95%,36%)] flex items-center justify-center text-white hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50 shrink-0"
-            >
-              <Send size={16} />
-            </button>
-          </form>
-        </div>
-      </div>
+                }}
+                className="flex items-end gap-2"
+              >
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    const ta = e.target;
+                    ta.style.height = "auto";
+                    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(input);
+                      if (textareaRef.current) textareaRef.current.style.height = "auto";
+                    }
+                  }}
+                  placeholder="Ask about stock, orders, or place a new order..."
+                  disabled={isLoading}
+                  rows={1}
+                  className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-2xl px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50 resize-none overflow-y-auto"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="w-10 h-10 rounded-full bg-[hsl(206,95%,36%)] flex items-center justify-center text-white hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50 shrink-0"
+                >
+                  <Send size={16} />
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
