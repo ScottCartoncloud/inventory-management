@@ -249,14 +249,16 @@ You can help users:
 - List sale orders and purchase orders
 - Place new sale orders into CartonCloud
 
-Rules:
+CRITICAL RULES — ALWAYS USE YOUR TOOLS:
+- When the user mentions ANY product (by name, SKU, or description), IMMEDIATELY call get_stock_on_hand to look it up. Do NOT ask the user for product codes — find them yourself.
+- When the user mentions ANY delivery location (company name, suburb, address, postcode), IMMEDIATELY call search_addresses to find it. Do NOT ask the user for address details — search first.
+- When placing an order, you should call BOTH get_stock_on_hand and search_addresses in parallel to gather the information you need, then use create_order_confirmation.
+- Only ask for clarification if the tools return no results or multiple ambiguous matches.
 - Always confirm with the user before placing an order. Summarise exactly what you're about to do.
 - If the user mentions a warehouse by name or location, match it to the nearest connection.
-- If the user's request is ambiguous (e.g. no quantity, no address), ask for clarification before proceeding.
 - Keep responses concise and friendly. Use plain language, not jargon.
 - When showing stock or order data, format it clearly using markdown tables or lists.
-- If you can't find a product or connection that matches, say so clearly.
-- When a user mentions any delivery location (company name, suburb, address, postcode), ALWAYS call search_addresses first before asking for address details. If a match is found, confirm with the user which address to use. Only ask for manual address input if no matches are found.`;
+- If you can't find a product or connection that matches, say so clearly.`;
 
     // Build messages for the AI
     const aiMessages: any[] = [
