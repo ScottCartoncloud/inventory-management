@@ -164,7 +164,7 @@ export function ChatView() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col bg-gradient-to-b from-[hsl(206,95%,36%)] to-[hsl(206,95%,28%)] overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden">
       {/* Scrollable thread area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-[700px] mx-auto w-full px-4 py-6 flex flex-col min-h-full">
