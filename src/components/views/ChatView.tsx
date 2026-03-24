@@ -504,6 +504,150 @@ export function ChatView() {
           </>
         )}
       </div>
+
+      {/* ── Order Preview Panel ── */}
+      {orderPreview && (
+        <div className="w-96 border-l border-border bg-background flex flex-col animate-slide-in-right flex-shrink-0">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[hsl(206,95%,36%)]/10 flex items-center justify-center">
+                  <Boxes size={16} className="text-[hsl(206,95%,36%)]" />
+                </div>
+                <span className="font-semibold text-foreground">Order Preview</span>
+              </div>
+              <button
+                onClick={() => {
+                  setOrderPreview(null);
+                  handleCancel(messages.find(m => m.id === orderPreview.msgId)!);
+                }}
+                className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            {/* From */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">From (Warehouse)</p>
+              <div className="bg-muted rounded-lg px-3 py-2">
+                <p className="text-sm font-medium text-foreground">
+                  {connections?.find(c => c.id === orderPreview.connectionId)?.name ?? orderPreview.connectionId}
+                </p>
+              </div>
+            </div>
+
+            {/* Deliver To */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Deliver To</p>
+              <div className="bg-muted rounded-lg px-3 py-2 space-y-0.5">
+                {(orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.companyName && (
+                  <p className="text-sm font-medium text-foreground">
+                    {(orderPreview.confirmationData.payload as any).order.deliverAddress.companyName}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {(orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.address1}
+                </p>
+                {(orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.address2 && (
+                  <p className="text-sm text-muted-foreground">
+                    {(orderPreview.confirmationData.payload as any).order.deliverAddress.address2}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {[
+                    (orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.suburb,
+                    (orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.stateCode,
+                    (orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.postcode,
+                  ].filter(Boolean).join(", ")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {(orderPreview.confirmationData.payload as any)?.order?.deliverAddress?.countryCode ?? "AU"}
+                </p>
+              </div>
+            </div>
+
+            {/* Order Details */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Order Details</p>
+              <div className="bg-muted rounded-lg px-3 py-2 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Reference</span>
+                  <span className="font-medium text-foreground">
+                    {(orderPreview.confirmationData.payload as any)?.order?.reference ?? "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Required by</span>
+                  <span className="font-medium text-foreground">
+                    {(orderPreview.confirmationData.payload as any)?.order?.deliverRequiredDate ?? "ASAP"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Items */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Items</p>
+              <div className="bg-muted rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Product</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">SKU</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Qty</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">UOM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {((orderPreview.confirmationData.payload as any)?.order?.items ?? []).map((item: any, i: number) => (
+                      <tr key={i} className={i > 0 ? "border-t border-border" : ""}>
+                        <td className="px-3 py-2 text-foreground">{item.productName ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{item.ccProductCode ?? "—"}</td>
+                        <td className="px-3 py-2 text-right text-foreground">{item.quantity}</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground">{item.unitOfMeasure ?? "EACH"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="px-3 py-2 border-t border-border text-xs text-muted-foreground">
+                  {((orderPreview.confirmationData.payload as any)?.order?.items ?? []).length} item(s)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 py-4 border-t border-border space-y-2">
+            <button
+              onClick={() => {
+                const msg = messages.find(m => m.id === orderPreview.msgId);
+                if (msg) handleConfirm(msg);
+                setOrderPreview(null);
+              }}
+              disabled={isLoading}
+              className="w-full py-2.5 bg-[hsl(206,95%,36%)] text-white rounded-lg text-sm font-semibold hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50"
+            >
+              Place Order
+            </button>
+            <button
+              onClick={() => {
+                const msg = messages.find(m => m.id === orderPreview.msgId);
+                if (msg) handleCancel(msg);
+                setOrderPreview(null);
+              }}
+              disabled={isLoading}
+              className="w-full py-2.5 border border-border text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
