@@ -55,6 +55,11 @@ export function ChatView() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [orderPreview, setOrderPreview] = useState<{
+    msgId: string;
+    connectionId: string;
+    confirmationData: ConfirmationPayload;
+  } | null>(null);
   const { data: connections } = useConnections();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
