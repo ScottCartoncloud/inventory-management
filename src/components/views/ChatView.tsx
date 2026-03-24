@@ -198,7 +198,7 @@ export function ChatView() {
                     <LoadingDots />
                   ) : msg.role === "assistant" ? (
                     <>
-                      <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
+                      <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                       {msg.type === "confirmation" && msg.confirmationData && (
