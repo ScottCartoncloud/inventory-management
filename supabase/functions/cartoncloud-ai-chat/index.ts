@@ -216,15 +216,18 @@ function handleCreateOrderConfirmation(args: any) {
       summary: `${args.quantity}x ${args.productName || args.ccProductCode} → ${addrStr}`,
       order: {
         connectionId: args.connectionId,
-        reference: args.reference,
-        items: [
-          {
-            productCode: args.ccProductCode,
-            quantity: args.quantity,
-            unitOfMeasure: args.unitOfMeasure || "EACH",
-          },
-        ],
-        deliverAddress: args.deliverAddress,
+        order: {
+          reference: args.reference,
+          items: [
+            {
+              ccProductCode: args.ccProductCode,
+              productName: args.productName || args.ccProductCode,
+              quantity: args.quantity,
+              unitOfMeasure: args.unitOfMeasure || "EACH",
+            },
+          ],
+          deliverAddress: args.deliverAddress,
+        },
       },
     },
   };
