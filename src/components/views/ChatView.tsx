@@ -262,7 +262,7 @@ export function ChatView() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about stock, orders, or place a new order..."
               disabled={isLoading}
-              className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
+              className="flex-1 bg-muted text-foreground placeholder:text-muted-foreground rounded-full px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(206,95%,36%)]/30 border border-border disabled:opacity-50"
             />
             <button
               type="submit"
