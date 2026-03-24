@@ -146,13 +146,21 @@ async function handleGetStockOnHand(
   }));
 
   if (args.productSearch) {
+    // Normalize: strip common suffixes for basic stemming (e.g. "stands" -> "stand")
+    const stem = (w: string) => w.replace(/(s|es|ing|ed)$/i, '');
     const searchWords = args.productSearch.toLowerCase().split(/\s+/).filter(Boolean);
+    const searchStems = searchWords.map(stem);
     results = results.filter(
       (r: any) => {
         const name = r.productName.toLowerCase();
         const sku = r.sku.toLowerCase();
-        // Match if ALL search words appear in product name or SKU
-        return searchWords.every((w: string) => name.includes(w) || sku.includes(w));
+        const combined = name + " " + sku;
+        const combinedWords = combined.split(/\s+/);
+        const combinedStems = combinedWords.map(stem);
+        // Match if ALL search stems appear in product name/SKU stems
+        return searchStems.every((sw: string) => 
+          combinedStems.some((cw: string) => cw.includes(sw) || sw.includes(cw))
+        );
       }
     );
   }
