@@ -242,7 +242,7 @@ export function ChatView() {
                   onClick={() => sendMessage(s)}
                   className="px-3 py-1.5 bg-[hsl(206,95%,36%)]/10 hover:bg-[hsl(206,95%,36%)]/20 text-[hsl(206,95%,36%)] text-xs rounded-full transition-colors"
                 >
-                  <Sparkles size={12} className="inline mr-1.5 -mt-0.5" />
+                  <Sparkles size={12} className="inline mr-1.5 -mt-0.5 text-[hsl(206,95%,36%)]" />
                   {s}
                 </button>
               ))}
