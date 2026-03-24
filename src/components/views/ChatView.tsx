@@ -267,7 +267,7 @@ export function ChatView() {
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[hsl(206,95%,36%)] hover:bg-white/90 transition-colors disabled:opacity-50 shrink-0"
+              className="w-10 h-10 rounded-full bg-[hsl(206,95%,36%)] flex items-center justify-center text-white hover:bg-[hsl(206,95%,32%)] transition-colors disabled:opacity-50 shrink-0"
             >
               <Send size={16} />
             </button>
