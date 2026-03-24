@@ -3,6 +3,7 @@ import { Send, Boxes, Sparkles, Plus, MessageSquare, Trash2, X } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { useConnections } from "@/hooks/useConnections";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   id: string;
