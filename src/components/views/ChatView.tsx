@@ -433,7 +433,29 @@ export function ChatView() {
                         ) : msg.role === "assistant" ? (
                           <>
                             <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              <ReactMarkdown
+                                components={{
+                                  table: ({ children }) => (
+                                    <div className="my-3 overflow-x-auto rounded-lg border border-border">
+                                      <table className="w-full text-xs border-collapse">{children}</table>
+                                    </div>
+                                  ),
+                                  thead: ({ children }) => (
+                                    <thead className="bg-muted/60">{children}</thead>
+                                  ),
+                                  th: ({ children }) => (
+                                    <th className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap border-b border-border">{children}</th>
+                                  ),
+                                  td: ({ children }) => (
+                                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap border-b border-border/50">{children}</td>
+                                  ),
+                                  tr: ({ children }) => (
+                                    <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
+                                  ),
+                                }}
+                              >
+                                {msg.content}
+                              </ReactMarkdown>
                             </div>
                             {msg.type === "confirmation" && msg.confirmationData && (
                               <div className="mt-3 pt-3 border-t border-border">
