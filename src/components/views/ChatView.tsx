@@ -46,7 +46,7 @@ export function ChatView() {
   const [isLoading, setIsLoading] = useState(false);
   const { data: connections } = useConnections();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
