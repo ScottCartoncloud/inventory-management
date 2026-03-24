@@ -170,11 +170,11 @@ export function ChatView() {
         <div className="max-w-[700px] mx-auto w-full px-4 py-6 flex flex-col min-h-full">
           {!hasMessages && (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-8">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
-                <Boxes size={32} className="text-white" />
+              <div className="w-16 h-16 bg-[hsl(206,95%,36%)]/10 rounded-2xl flex items-center justify-center">
+                <Boxes size={32} className="text-[hsl(206,95%,36%)]" />
               </div>
-              <h1 className="text-2xl font-semibold text-white">Bibendum AI Assistant</h1>
-              <p className="text-white/60 text-sm text-center max-w-md">
+              <h1 className="text-2xl font-semibold text-foreground">Bibendum AI Assistant</h1>
+              <p className="text-muted-foreground text-sm text-center max-w-md">
                 Ask about stock levels, orders, or place new orders using natural language.
               </p>
             </div>
