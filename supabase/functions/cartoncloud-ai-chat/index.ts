@@ -146,13 +146,21 @@ async function handleGetStockOnHand(
   }));
 
   if (args.productSearch) {
+    // Normalize: strip common suffixes for basic stemming (e.g. "stands" -> "stand")
+    const stem = (w: string) => w.replace(/(s|es|ing|ed)$/i, '');
     const searchWords = args.productSearch.toLowerCase().split(/\s+/).filter(Boolean);
+    const searchStems = searchWords.map(stem);
     results = results.filter(
       (r: any) => {
         const name = r.productName.toLowerCase();
         const sku = r.sku.toLowerCase();
-        // Match if ALL search words appear in product name or SKU
-        return searchWords.every((w: string) => name.includes(w) || sku.includes(w));
+        const combined = name + " " + sku;
+        const combinedWords = combined.split(/\s+/);
+        const combinedStems = combinedWords.map(stem);
+        // Match if ALL search stems appear in product name/SKU stems
+        return searchStems.every((sw: string) => 
+          combinedStems.some((cw: string) => cw.includes(sw) || sw.includes(cw))
+        );
       }
     );
   }
@@ -244,8 +252,10 @@ serve(async (req) => {
 
     const systemPrompt = `You are an AI assistant for a logistics inventory management portal connected to CartonCloud WMS.
 
-You have access to the user's CartonCloud connections (warehouses):
+You have access to the user's CartonCloud connections (warehouses/locations). Each connection IS a warehouse — you do NOT need to ask the user which warehouse to use:
 ${connectionsInfo || "No connections configured yet."}
+
+${(connections || []).length === 1 ? `There is only ONE connection, so ALWAYS use it automatically — never ask the user to choose a warehouse.` : `If the user doesn't specify a warehouse/location, and there are multiple connections, ask which one. But if the context makes it obvious (e.g. they mention a name that matches), just use it.`}
 
 You can help users:
 - Check stock on hand for specific products or SKUs
@@ -253,15 +263,14 @@ You can help users:
 - Place new sale orders into CartonCloud
 
 CRITICAL RULES — ALWAYS USE YOUR TOOLS:
-- When the user mentions ANY product (by name, SKU, or description), IMMEDIATELY call get_stock_on_hand to look it up. Do NOT ask the user for product codes — find them yourself.
-- When the user mentions ANY delivery location (company name, suburb, address, postcode), IMMEDIATELY call search_addresses to find it. Do NOT ask the user for address details — search first.
-- When placing an order, you should call BOTH get_stock_on_hand and search_addresses in parallel to gather the information you need, then use create_order_confirmation.
-- Only ask for clarification if the tools return no results or multiple ambiguous matches.
-- Always confirm with the user before placing an order. Summarise exactly what you're about to do.
-- If the user mentions a warehouse by name or location, match it to the nearest connection.
-- Keep responses concise and friendly. Use plain language, not jargon.
-- When showing stock or order data, format it clearly using markdown tables or lists.
-- If you can't find a product or connection that matches, say so clearly.`;
+1. When the user mentions ANY product (by name, SKU, or description), IMMEDIATELY call get_stock_on_hand to look it up. Do NOT ask the user for product codes or SKUs — find them yourself. Handle plurals (e.g. "display stands" = "DISPLAY STAND").
+2. When the user mentions ANY delivery destination (company name, suburb, address, postcode, or location name like "CartonCloud Burleigh"), IMMEDIATELY call search_addresses to find it in the address book. The destination is where the goods are being SENT TO — it is NOT a warehouse. Do NOT confuse delivery destinations with warehouse connections.
+3. When placing an order, call BOTH get_stock_on_hand AND search_addresses in parallel, then use create_order_confirmation with the results.
+4. NEVER ask the user for information you can look up with your tools (product codes, addresses, connection IDs).
+5. Only ask for clarification if tools return no results or multiple ambiguous matches.
+6. Always confirm with the user before placing an order by calling create_order_confirmation.
+7. Keep responses concise and friendly. Format data with markdown tables or lists.
+8. The phrase "send X to Y" means: X is the product, Y is the delivery destination — search for Y as an address, not as a warehouse.`;
 
     // Build messages for the AI
     const aiMessages: any[] = [
