@@ -246,8 +246,10 @@ Deno.serve(async (req) => {
       // Still return success since CC accepted it
     }
 
-    // Save items
+    // Save items — delete existing first to prevent duplicates from webhook race
     if (savedOrder) {
+      await supabase.from("sale_order_items").delete().eq("sale_order_id", savedOrder.id);
+
       const itemRows = order.items.map((item, idx) => {
         const ccItem = ccItems[idx] as Record<string, unknown> | undefined;
         const ccItemDetails = ccItem?.details as Record<string, unknown> | undefined;
