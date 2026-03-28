@@ -122,6 +122,14 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
             <Field label="Total Qty" value={order.total_qty?.toLocaleString()} />
             <Field label="Items" value={String(order.total_items)} />
             <Field label="Delivery Method" value={order.deliver_method} />
+            <Field label="Required Date" value={
+              order.raw_payload?.details?.deliver?.requiredDate
+                ? new Date(order.raw_payload.details.deliver.requiredDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+                : null
+            } />
+            <Field label="Invoice Value" value={
+              order.invoice_amount != null ? `$${Number(order.invoice_amount).toLocaleString("en-AU", { minimumFractionDigits: 2 })} ${order.invoice_currency || ""}` : null
+            } />
           </div>
 
           {/* Delivery Address */}
