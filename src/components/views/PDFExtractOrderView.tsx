@@ -137,6 +137,7 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
           country_code: result.deliverAddress.countryCode || "AU",
           state_name: null,
           city: null,
+          source: "ai-extract",
         });
       }
 
