@@ -370,17 +370,27 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
                   <Textarea value={deliverInstructions} onChange={e => setDeliverInstructions(e.target.value)} rows={2} />
                 </div>
 
-                {/* Urgent toggle */}
-                <div className="flex items-center justify-between">
+                {/* Urgent + Invoice Value toggles on same line */}
+                <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <Switch checked={includeUrgent} onCheckedChange={setIncludeUrgent} className="scale-75" />
+                    <Switch checked={includeUrgent} onCheckedChange={(v) => { setIncludeUrgent(v); if (v) setUrgent(true); else setUrgent(false); }} />
                     <label className="text-sm font-medium">Urgent</label>
                   </div>
-                  {includeUrgent && (
-                    <Switch checked={urgent} onCheckedChange={setUrgent} />
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Switch checked={includeInvoiceValue} onCheckedChange={setIncludeInvoiceValue} />
+                    <label className="text-sm font-medium">Invoice Value</label>
+                  </div>
                 </div>
-
+                {includeInvoiceValue && (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={invoiceValue}
+                    onChange={e => setInvoiceValue(e.target.value)}
+                    placeholder="0.00"
+                  />
+                )}
                 {/* Invoice Value */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
