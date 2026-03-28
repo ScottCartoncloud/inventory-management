@@ -97,6 +97,7 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
         logo_url: connection.logo_url,
         cc_customer_id: customerId || null,
         cc_warehouse_name: warehouseName || "Default",
+        extraction_hints: extractionHints || null,
       });
       setIsEditing(false);
       toast({ title: "Saved", description: `Connection for ${connection.code} updated.` });
