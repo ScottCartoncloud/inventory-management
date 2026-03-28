@@ -27,6 +27,9 @@ interface DeliverAddress {
 
 interface CreateOrderRequest {
   connectionId: string;
+  attachmentBase64?: string;
+  attachmentFilename?: string;
+  attachmentMimeType?: string;
   order: {
     reference: string;
     urgent?: boolean;
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { connectionId, order } = (await req.json()) as CreateOrderRequest;
+    const { connectionId, order, attachmentBase64, attachmentFilename, attachmentMimeType } = (await req.json()) as CreateOrderRequest;
 
     // Validate
     if (!connectionId) {
@@ -275,6 +278,76 @@ Deno.serve(async (req) => {
       await supabase.from("sale_order_items").insert(itemRows);
     }
 
+    // Handle attachment — upload to Supabase Storage then send to CartonCloud
+    let attachmentUrl: string | null = null;
+
+    if (attachmentBase64 && attachmentFilename && savedOrder) {
+      try {
+        const binaryStr = atob(attachmentBase64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+
+        const mimeType = attachmentMimeType || "application/pdf";
+        const storagePath = `${connectionId}/${savedOrder.id}/${attachmentFilename}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("order-attachments")
+          .upload(storagePath, bytes, {
+            contentType: mimeType,
+            upsert: true,
+          });
+
+        if (!uploadError && uploadData) {
+          const { data: urlData } = supabase.storage
+            .from("order-attachments")
+            .getPublicUrl(storagePath);
+
+          attachmentUrl = urlData?.publicUrl || null;
+
+          await supabase
+            .from("sale_orders")
+            .update({
+              attachment_url: attachmentUrl,
+              attachment_filename: attachmentFilename,
+            })
+            .eq("id", savedOrder.id);
+        } else {
+          console.error("Storage upload error:", uploadError);
+        }
+
+        // Send to CartonCloud as a document attachment
+        if (ccOrder?.id) {
+          const docUrl = `${connection.api_endpoint}/tenants/${connection.tenant_id}/outbound-orders/${ccOrder.id}/documents`;
+
+          const blob = new Blob([bytes], { type: mimeType });
+          const formData = new FormData();
+          formData.append("file", blob, attachmentFilename);
+          formData.append("name", attachmentFilename);
+
+          const docResponse = await fetch(docUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Accept-Version": "1",
+              Accept: "application/json",
+            },
+            body: formData,
+          });
+
+          if (!docResponse.ok) {
+            const errText = await docResponse.text();
+            console.error("CC document upload error:", docResponse.status, errText);
+          } else {
+            console.log("CC document uploaded successfully for order:", ccOrder.id);
+          }
+        }
+      } catch (attachErr) {
+        console.error("Attachment handling error:", attachErr);
+      }
+    }
+
     // Check for 228 / REJECTED status
     const isRejected = ccResponse.status === 228 || String(ccOrder.status) === "REJECTED";
     const ccErrors: string[] = [];
@@ -289,6 +362,7 @@ Deno.serve(async (req) => {
     const response: Record<string, unknown> = {
       success: true,
       warning: isRejected,
+      attachmentUrl,
       order: {
         id: savedOrder?.id || null,
         cc_order_id: String(ccOrder.id),

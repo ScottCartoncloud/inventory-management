@@ -48,6 +48,8 @@ export interface SaleOrder {
   raw_payload: unknown;
   created_at: string;
   updated_at: string;
+  attachment_url: string | null;
+  attachment_filename: string | null;
   // Joined
   connection?: { id: string; name: string; color: string } | null;
   items?: SaleOrderItem[];
