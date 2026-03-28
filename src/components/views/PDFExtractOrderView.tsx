@@ -391,23 +391,6 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
                     placeholder="0.00"
                   />
                 )}
-                {/* Invoice Value */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={includeInvoiceValue} onCheckedChange={setIncludeInvoiceValue} className="scale-75" />
-                    <label className="text-sm font-medium">Invoice Value</label>
-                  </div>
-                  {includeInvoiceValue && (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={invoiceValue}
-                      onChange={e => setInvoiceValue(e.target.value)}
-                      placeholder="0.00"
-                    />
-                  )}
-                </div>
               </Card>
 
               {/* Line Items */}
