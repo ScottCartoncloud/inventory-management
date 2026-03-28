@@ -321,18 +321,23 @@ Deno.serve(async (req) => {
         if (ccOrder?.id) {
           const docUrl = `${connection.api_endpoint}/tenants/${connection.tenant_id}/outbound-orders/${ccOrder.id}/documents`;
 
-          const blob = new Blob([bytes], { type: mimeType });
-          const formData = new FormData();
-          formData.append("file", blob, attachmentFilename);
+          const docBody = {
+            type: "OUTBOUND_ORDER_INVOICE",
+            content: {
+              name: attachmentFilename,
+              data: attachmentBase64,
+            },
+          };
 
           const docResponse = await fetch(docUrl, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
               "Accept-Version": "1",
+              "Content-Type": "application/json",
               Accept: "application/json",
             },
-            body: formData,
+            body: JSON.stringify(docBody),
           });
 
           if (!docResponse.ok) {
