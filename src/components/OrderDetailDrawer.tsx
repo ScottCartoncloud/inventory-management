@@ -123,8 +123,8 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
             <Field label="Items" value={String(order.total_items)} />
             <Field label="Delivery Method" value={order.deliver_method} />
             <Field label="Required Date" value={
-              order.raw_payload?.details?.deliver?.requiredDate
-                ? new Date(order.raw_payload.details.deliver.requiredDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+              (order.raw_payload as any)?.details?.deliver?.requiredDate
+                ? new Date((order.raw_payload as any).details.deliver.requiredDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
                 : null
             } />
             <Field label="Invoice Value" value={
