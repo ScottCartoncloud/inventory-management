@@ -87,6 +87,8 @@ Return this exact JSON structure:
   },
   "deliverRequiredDate": "YYYY-MM-DD or null",
   "deliverInstructions": "",
+  "urgent": false,
+  "invoiceValue": 0,
   "items": [
     {
       "ccProductCode": "matched CC product code or null if unmatched",

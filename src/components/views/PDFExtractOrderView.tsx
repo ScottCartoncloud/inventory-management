@@ -11,6 +11,7 @@ import { useIncrementAddressUse } from "@/hooks/useAddresses";
 import { AddressPicker, type SelectedAddress } from "@/components/AddressPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft, Upload, Loader2, AlertTriangle, CheckCircle2,
   ChevronDown, X, Sparkles
@@ -45,6 +46,8 @@ interface ExtractedOrder {
   };
   deliverRequiredDate: string | null;
   deliverInstructions: string;
+  urgent: boolean;
+  invoiceValue: number | null;
   items: ExtractedLineItem[];
   confidence: "high" | "medium" | "low";
   notes: string;
@@ -64,7 +67,10 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
   const [deliverRequiredDate, setDeliverRequiredDate] = useState("");
   const [deliverInstructions, setDeliverInstructions] = useState("");
   const [lineItems, setLineItems] = useState<ExtractedLineItem[]>([]);
-
+  const [urgent, setUrgent] = useState(false);
+  const [invoiceValue, setInvoiceValue] = useState<string>("");
+  const [includeUrgent, setIncludeUrgent] = useState(true);
+  const [includeInvoiceValue, setIncludeInvoiceValue] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,7 +129,8 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
       setDeliverInstructions(result.deliverInstructions || "");
       setDeliverRequiredDate(result.deliverRequiredDate || "");
       setLineItems(result.items || []);
-
+      setUrgent(result.urgent ?? false);
+      setInvoiceValue(result.invoiceValue != null ? String(result.invoiceValue) : "");
       if (result.deliverAddress?.address1) {
         setDeliveryAddress({
           id: undefined,
@@ -190,7 +197,8 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
             deliverRequiredDate: deliverRequiredDate || undefined,
             deliverMethod: "SHIPPING",
             allowSplitting: true,
-            invoiceValue: 0,
+            urgent: includeUrgent ? urgent : false,
+            invoiceValue: includeInvoiceValue ? (parseFloat(invoiceValue) || 0) : 0,
             items,
           },
         },
@@ -360,6 +368,35 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Delivery Instructions</label>
                   <Textarea value={deliverInstructions} onChange={e => setDeliverInstructions(e.target.value)} rows={2} />
+                </div>
+
+                {/* Urgent toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={includeUrgent} onCheckedChange={setIncludeUrgent} className="scale-75" />
+                    <label className="text-sm font-medium">Urgent</label>
+                  </div>
+                  {includeUrgent && (
+                    <Switch checked={urgent} onCheckedChange={setUrgent} />
+                  )}
+                </div>
+
+                {/* Invoice Value */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={includeInvoiceValue} onCheckedChange={setIncludeInvoiceValue} className="scale-75" />
+                    <label className="text-sm font-medium">Invoice Value</label>
+                  </div>
+                  {includeInvoiceValue && (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={invoiceValue}
+                      onChange={e => setInvoiceValue(e.target.value)}
+                      placeholder="0.00"
+                    />
+                  )}
                 </div>
               </Card>
 
