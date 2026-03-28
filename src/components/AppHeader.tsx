@@ -50,7 +50,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
         </div>
       </div>
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-4 py-1.5">
+      <nav className="flex items-center justify-center px-4 py-1.5">
         {/* Primary nav items — left aligned */}
         <div className="flex items-center gap-1">
           {primaryNavItems.map((item, i) => {
