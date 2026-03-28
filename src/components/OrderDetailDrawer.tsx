@@ -30,6 +30,26 @@ function formatDate(dateStr: string | null): string {
 
 export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDrawerProps) {
   const [resubmitting, setResubmitting] = useState(false);
+  const [latestWebhook, setLatestWebhook] = useState<any>(null);
+  const [webhookLoading, setWebhookLoading] = useState(false);
+
+  useEffect(() => {
+    if (!order?.cc_order_id || !open) {
+      setLatestWebhook(null);
+      return;
+    }
+    setWebhookLoading(true);
+    supabase
+      .from("webhook_events")
+      .select("*")
+      .eq("cc_order_id", order.cc_order_id)
+      .order("received_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        setLatestWebhook(data?.[0] || null);
+        setWebhookLoading(false);
+      });
+  }, [order?.cc_order_id, open]);
 
   if (!order) return null;
 
@@ -218,6 +238,40 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
               <pre className="mt-2 text-xs bg-muted p-3 rounded-lg overflow-auto max-h-64 text-muted-foreground">
                 {JSON.stringify(order.raw_payload, null, 2)}
               </pre>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown size={12} />
+              Latest Webhook
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              {webhookLoading ? (
+                <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin" /> Loading…
+                </div>
+              ) : latestWebhook ? (
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-3 text-xs">
+                    <Badge variant="outline" className="text-xs">{latestWebhook.event_type}</Badge>
+                    <span className="text-muted-foreground">{formatDate(latestWebhook.received_at)}</span>
+                    <Badge variant={latestWebhook.processed ? "secondary" : "destructive"} className="text-xs">
+                      {latestWebhook.processed ? "Processed" : "Pending"}
+                    </Badge>
+                  </div>
+                  {latestWebhook.processing_error && (
+                    <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                      {latestWebhook.processing_error}
+                    </div>
+                  )}
+                  <pre className="text-xs bg-muted p-3 rounded-lg overflow-auto max-h-64 text-muted-foreground">
+                    {JSON.stringify(latestWebhook.payload, null, 2)}
+                  </pre>
+                </div>
+              ) : (
+                <div className="mt-2 text-xs text-muted-foreground">No webhook events found for this order</div>
+              )}
             </CollapsibleContent>
           </Collapsible>
         </div>
