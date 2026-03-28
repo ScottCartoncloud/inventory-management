@@ -324,7 +324,6 @@ Deno.serve(async (req) => {
           const blob = new Blob([bytes], { type: mimeType });
           const formData = new FormData();
           formData.append("file", blob, attachmentFilename);
-          formData.append("name", attachmentFilename);
 
           const docResponse = await fetch(docUrl, {
             method: "POST",
