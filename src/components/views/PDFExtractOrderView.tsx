@@ -237,7 +237,7 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
       {/* Body: side by side */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL: Upload + PDF preview */}
-        <div className="w-[420px] flex-shrink-0 border-r border-border flex flex-col overflow-hidden">
+        <div className="w-1/2 flex-shrink-0 border-r border-border flex flex-col overflow-hidden">
           <div className="p-4 space-y-4 flex-shrink-0">
             {/* Connection selector */}
             <div className="space-y-1.5">
