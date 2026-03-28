@@ -11,6 +11,7 @@ import { useIncrementAddressUse } from "@/hooks/useAddresses";
 import { AddressPicker, type SelectedAddress } from "@/components/AddressPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft, Upload, Loader2, AlertTriangle, CheckCircle2,
   ChevronDown, X, Sparkles
