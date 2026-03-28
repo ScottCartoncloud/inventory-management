@@ -1,0 +1,1 @@
+DELETE FROM sale_orders WHERE id = '3ee4be8b-a01a-440e-9cce-c8a817656c31';
