@@ -27,6 +27,7 @@ export interface Connection {
   soh_last_refreshed_at: string | null;
   webhook_secret: string | null;
   org_id: string;
+  extraction_hints: string | null;
 }
 
 export function useConnections() {
@@ -62,6 +63,7 @@ export function useUpsertConnection() {
             is_active: conn.is_active,
             cc_customer_id: conn.cc_customer_id,
             cc_warehouse_name: conn.cc_warehouse_name,
+            extraction_hints: conn.extraction_hints,
           } as any)
           .eq("id", conn.id)
           .select()
@@ -81,7 +83,8 @@ export function useUpsertConnection() {
             client_secret: conn.client_secret,
             is_active: conn.is_active,
             logo_url: conn.logo_url,
-          })
+            extraction_hints: conn.extraction_hints,
+          } as any)
           .select()
           .single();
         if (error) throw error;

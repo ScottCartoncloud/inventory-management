@@ -5,9 +5,16 @@ import { LocationPills } from "@/components/LocationPills";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, AlertTriangle, Cloud, Monitor } from "lucide-react";
+import { Plus, Search, AlertTriangle, Cloud, Monitor, FileText, ChevronDown } from "lucide-react";
 import { CreateOrderView } from "@/components/views/CreateOrderView";
+import { PDFExtractOrderView } from "@/components/views/PDFExtractOrderView";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSaleOrders, type SaleOrder } from "@/hooks/useSaleOrders";
 import { OrderDetailDrawer } from "@/components/OrderDetailDrawer";
@@ -33,7 +40,7 @@ function getItemsSummary(order: SaleOrder): string {
 export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [mode, setMode] = useState<"list" | "create">("list");
+  const [mode, setMode] = useState<"list" | "create" | "extract">("list");
   const [selectedOrder, setSelectedOrder] = useState<SaleOrder | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -59,6 +66,9 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
   if (mode === "create") {
     return <CreateOrderView onBack={() => setMode("list")} />;
   }
+  if (mode === "extract") {
+    return <PDFExtractOrderView onBack={() => setMode("list")} />;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -77,10 +87,25 @@ export function OrdersView({ activeLocation, onLocationChange }: OrdersViewProps
             <span className="text-xs text-muted-foreground">Real-time</span>
           </div>
         </div>
-        <Button size="sm" onClick={() => setMode("create")} className="gap-1.5">
-          <Plus size={14} />
-          New Order
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="gap-1.5">
+              <Plus size={14} />
+              New Order
+              <ChevronDown size={12} className="opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setMode("create")}>
+              <Plus size={14} className="mr-2" />
+              Manual Entry
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMode("extract")}>
+              <FileText size={14} className="mr-2" />
+              From Invoice / PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="bg-card border-b border-border flex items-center justify-between px-5 py-3 gap-4 flex-wrap">

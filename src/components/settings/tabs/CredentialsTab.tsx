@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useUpsertConnection, useTestConnection, type Connection } from "@/hooks/useConnections";
 import { toast } from "@/hooks/use-toast";
@@ -33,6 +34,7 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
   const [endpoint, setEndpoint] = useState(connection.api_endpoint || "https://api.cartoncloud.com");
   const [customerId, setCustomerId] = useState(connection.cc_customer_id || "");
   const [warehouseName, setWarehouseName] = useState(connection.cc_warehouse_name || "Default");
+  const [extractionHints, setExtractionHints] = useState(connection.extraction_hints || "");
 
   const upsertMutation = useUpsertConnection();
   const testMutation = useTestConnection();
@@ -214,6 +216,23 @@ export function CredentialsTab({ connection }: CredentialsTabProps) {
             Save SOH Settings
           </Button>
         )}
+      </div>
+
+      <div className="pt-4 border-t border-border space-y-4">
+        <div className="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">PDF Extraction</div>
+        <div className="space-y-1.5">
+          <Label>Extraction Hints</Label>
+          <Textarea
+            value={extractionHints}
+            onChange={e => setExtractionHints(e.target.value)}
+            placeholder="Help the AI extract correctly from your invoices. E.g. 'Product codes are in the Item No. column. Delivery address is in the Ship To box.'"
+            rows={3}
+            disabled={!isEditing}
+          />
+          <p className="text-xs text-muted-foreground">
+            These hints are used when extracting orders from uploaded PDFs. Leave blank if not using PDF extraction.
+          </p>
+        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
