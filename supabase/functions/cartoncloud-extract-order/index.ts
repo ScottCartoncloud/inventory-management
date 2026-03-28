@@ -69,6 +69,14 @@ Extract the following and return ONLY valid JSON matching the schema below. Do n
 Available products at this warehouse (match extracted line items to these):
 ${JSON.stringify(productsJson, null, 2)}
 
+EXTRACTION RULES — always follow these, they override any hints below:
+
+1. PRICING: Always use the ex-GST / ex-tax / before-tax unit price. Never use GST-inclusive prices.
+
+2. UNIT OF MEASURE: Copy the UOM exactly as printed on the document. Do not normalise, abbreviate, or expand it. If the document says "CTN" use "CTN". If it says "Carton" use "Carton".
+
+3. ORDER REFERENCE: Use the invoice number or order number as the reference. Do not use a purchase order number unless no invoice or order number is present.
+
 Extraction hints:
 ${hints}
 
