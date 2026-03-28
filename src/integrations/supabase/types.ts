@@ -575,6 +575,8 @@ export type Database = {
       sale_orders: {
         Row: {
           allow_splitting: boolean | null
+          attachment_filename: string | null
+          attachment_url: string | null
           cc_created_at: string | null
           cc_dispatched_at: string | null
           cc_modified_at: string | null
@@ -605,6 +607,8 @@ export type Database = {
         }
         Insert: {
           allow_splitting?: boolean | null
+          attachment_filename?: string | null
+          attachment_url?: string | null
           cc_created_at?: string | null
           cc_dispatched_at?: string | null
           cc_modified_at?: string | null
@@ -635,6 +639,8 @@ export type Database = {
         }
         Update: {
           allow_splitting?: boolean | null
+          attachment_filename?: string | null
+          attachment_url?: string | null
           cc_created_at?: string | null
           cc_dispatched_at?: string | null
           cc_modified_at?: string | null
