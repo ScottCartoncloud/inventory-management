@@ -279,7 +279,7 @@ async function processOutboundOrder(
     deliver_method: (deliverMethod?.type || null) as string | null,
     collect_company: (collectAddr?.companyName || null) as string | null,
     collect_address: formatAddress(collectAddr),
-    urgent: Boolean((details as Record<string, unknown>)?.urgent) || false,
+    urgent: details?.urgent != null ? Boolean(details.urgent) : false,
     allow_splitting: (details as Record<string, unknown>)?.allowSplitting != null
       ? Boolean((details as Record<string, unknown>)?.allowSplitting)
       : true,
@@ -305,9 +305,14 @@ async function processOutboundOrder(
   let order: { id: string } | null = null;
 
   if (existingByCcId?.id) {
+    // Preserve portal-set urgent flag if webhook doesn't explicitly set it
+    const updateData = { ...baseOrderData, source: existingByCcId.source || "cartoncloud" };
+    if (existingByCcId.source === "portal" && details?.urgent == null) {
+      delete (updateData as any).urgent;
+    }
     const { data: updatedByCcId, error: updatedByCcIdError } = await supabase
       .from("sale_orders")
-      .update({ ...baseOrderData, source: existingByCcId.source || "cartoncloud" })
+      .update(updateData)
       .eq("id", existingByCcId.id)
       .select("id")
       .single();
