@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { LocationChip } from "@/components/LocationChip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Cloud, Monitor, RefreshCw, Loader2 } from "lucide-react";
+import { ChevronDown, Cloud, Monitor, RefreshCw, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { SaleOrder } from "@/hooks/useSaleOrders";
@@ -114,8 +114,8 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
               <Badge variant="destructive" className="text-xs">Urgent</Badge>
             )}
           </div>
-          {canResubmit && (
-            <div className="mt-3">
+          <div className="flex items-center gap-2 mt-3">
+            {canResubmit && (
               <Button
                 size="sm"
                 variant="outline"
@@ -129,8 +129,21 @@ export function OrderDetailDrawer({ order, open, onOpenChange }: OrderDetailDraw
                   <><RefreshCw size={14} /> Resubmit to CartonCloud</>
                 )}
               </Button>
-            </div>
-          )}
+            )}
+            {order.attachment_url && (
+              <a
+                href={order.attachment_url}
+                download={order.attachment_filename || "order-attachment.pdf"}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Download size={14} />
+                  {order.attachment_filename || "Download Attachment"}
+                </Button>
+              </a>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="space-y-5 pt-5">

@@ -178,9 +178,28 @@ export function PDFExtractOrderView({ onBack }: PDFExtractOrderViewProps) {
           unitOfMeasure: i.unitOfMeasure,
         }));
 
+      // Auto-attach the source PDF
+      let attachmentBase64: string | undefined;
+      let attachmentFilename: string | undefined;
+      let attachmentMimeType: string | undefined;
+
+      if (pdfFile) {
+        attachmentFilename = pdfFile.name;
+        attachmentMimeType = pdfFile.type || "application/pdf";
+        attachmentBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(pdfFile);
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke("cartoncloud-create-order", {
         body: {
           connectionId: selectedConnectionId,
+          attachmentBase64,
+          attachmentFilename,
+          attachmentMimeType,
           order: {
             reference,
             deliverAddress: {

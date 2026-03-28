@@ -77,7 +77,7 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   const [notes, setNotes] = useState("");
   const [urgent, setUrgent] = useState(false);
   const [deliverMethod, setDeliverMethod] = useState("SHIPPING");
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   // Line items
   const [lineSearch, setLineSearch] = useState("");
@@ -195,8 +195,8 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (files) {
-      const names = Array.from(files).map(f => f.name);
-      setAttachments(prev => [...prev, ...names]);
+      const file = files[0];
+      if (file) setAttachments([file]);
     }
     e.target.value = "";
   }
@@ -233,9 +233,29 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
       const items = buildOrderItems();
       const addr = deliveryAddress!;
 
+      // Convert attachment to base64 if present
+      let attachmentBase64: string | undefined;
+      let attachmentFilename: string | undefined;
+      let attachmentMimeType: string | undefined;
+
+      if (attachments.length > 0) {
+        const file = attachments[0];
+        attachmentFilename = file.name;
+        attachmentMimeType = file.type || "application/pdf";
+        attachmentBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke("cartoncloud-create-order", {
         body: {
           connectionId: selectedLocation,
+          attachmentBase64,
+          attachmentFilename,
+          attachmentMimeType,
           order: {
             reference: orderReference,
             urgent,
@@ -407,21 +427,22 @@ export function CreateOrderView({ onBack }: CreateOrderViewProps) {
                 {/* Attachments */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Attachments</label>
-                  <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+                  <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors w-full justify-center"
                   >
                     <Upload size={16} />
-                    Attach Documents
+                    Attach Document (PDF, max 1 file)
                   </button>
                   {attachments.length > 0 && (
                     <div className="space-y-1">
-                      {attachments.map((name, i) => (
+                      {attachments.map((file, i) => (
                         <div key={i} className="flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded">
                           <FileUp size={14} className="text-muted-foreground" />
-                          <span className="flex-1 truncate">{name}</span>
-                          <button onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
+                          <span className="flex-1 truncate">{file.name}</span>
+                          <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                          <button onClick={() => setAttachments([])} className="text-muted-foreground hover:text-destructive">
                             <X size={14} />
                           </button>
                         </div>
