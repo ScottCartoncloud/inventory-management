@@ -279,7 +279,7 @@ async function processOutboundOrder(
     deliver_method: (deliverMethod?.type || null) as string | null,
     collect_company: (collectAddr?.companyName || null) as string | null,
     collect_address: formatAddress(collectAddr),
-    urgent: Boolean((details as Record<string, unknown>)?.urgent) || false,
+    urgent: details?.urgent != null ? Boolean(details.urgent) : false,
     allow_splitting: (details as Record<string, unknown>)?.allowSplitting != null
       ? Boolean((details as Record<string, unknown>)?.allowSplitting)
       : true,
