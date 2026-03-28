@@ -1,0 +1,1 @@
+ALTER TABLE public.connections ADD COLUMN extraction_hints TEXT;
