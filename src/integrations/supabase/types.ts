@@ -221,6 +221,7 @@ export type Database = {
           code: string
           color: string
           created_at: string
+          extraction_hints: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -248,6 +249,7 @@ export type Database = {
           code: string
           color?: string
           created_at?: string
+          extraction_hints?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -275,6 +277,7 @@ export type Database = {
           code?: string
           color?: string
           created_at?: string
+          extraction_hints?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
